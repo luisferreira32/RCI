@@ -15,14 +15,14 @@
 INPUT -  none
 OUTPUT - socked file descriptor or error -1
 */
-int tcp_create(void)
+int udp_create(void)
 {
     struct sockaddr_in server_addr;
     int port = 8000;
     int inet_reciv = -1;
 
     /*opens a stream socket to listen to our applications*/
-    if((inet_reciv = socket(AF_INET, SOCK_STREAM, 0))==-1)
+    if((inet_reciv = socket(AF_INET, SOCK_DGRAM, 0))==-1)
     {
         perror("Inet socket creation ");
         return -1;
@@ -42,38 +42,13 @@ int tcp_create(void)
     return inet_reciv;
 }
 
-/************************************************************************************************/
-/**** tcp_create **** for server to open business
-INPUT -  server file descriptor, pointer to memory for client address
-OUTPUT - new socket file descriptor for client communicaiton
-*/
-int tcp_accept(int server_fd, struct sockaddr_in * client_addr)
-{
-    socklen_t client_addr_size;
-    int client_fd = -1;
-
-    /*accept incoming connecion and save client address*/
-    client_addr_size = sizeof(struct sockaddr_in);
-    if(accept(server_fd, (struct sockaddr_in *) client_addr, &client_addr_size)<0)
-    {
-        perror("Failed to accept connection ");
-        return -1;
-    }
-    /*check if address is complete*/
-    if(client_addr_size < sizeof(struct sockaddr_in))
-    {
-        printf("Incomplete client address \n");
-    }
-
-    return client_fd;
-}
 
 /************************************************************************************************/
-/**** tcp_destroy **** destroys inet sockets
+/**** udp_destroy **** destroys inet sockets
 INPUT - socket file descriptor
 OUTPUT - none
 */
-void tcp_destroy(int fd)
+void udp_destroy(int fd)
 {
     if(close(fd))
     {
