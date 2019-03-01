@@ -1,49 +1,18 @@
-/* the built in includes */
+/* includes of external libs */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* the user includes */
+#include "startup.h"
+#include "UI.h"
+#include "tcp_api.h"
 
-/* structs definition -- wasn't this supposed to be on header?*/
-struct streamid_s
-{
-    char name[45];
-    char ip[15];
-    int port;
-}
-streamid_default =
-{
-    "\0",
-    "0.0.0.0",
-    -1
-};
-typedef struct streamid_s streamid;
-
-struct root_connection_s
-{
-    streamid this_stream;
-    char ipaddr[15];
-    int tport;
-    int uport;
-    char rsaddr[15];
-    int rsport;
-    int tcpsessions;
-    int bestpops;
-    int tsecs;
-    bool bopt;
-    bool dopt;
-    bool hopt;
-}
-root_connection_default =
-{
-    streamid_default // it's popping error!
-}
-;
-typedef struct root_connection_s root_connection;
+/* our main */
 
 int main(int argc, char const *argv[]) {
     /* auxiliary variables delcaration*/
+    root_connection my_connect;
 
     /* check stream ID */
     if( argc < 2)
@@ -53,28 +22,14 @@ int main(int argc, char const *argv[]) {
     else
     {
         /* connect to stream and show UI*/
-    }
-
-    /* check input arguments and options*/
-    if( argc > 3)
-    {
-        for (size_t i = 0; i < argc; i++)
+        /* stream connect returns success and fills pointer to connection */
+        if(connect_to_stream(&my_connect, argc, argv))
         {
-
-            switch (argv[i])
-            {
-                /* options with arguments option */
-                case '-i':
-                    /* treat it */
-                    i++;
-                    break;
-
-                /* options WITHOU arguments*/
-                case '-d':
-                    /* treat it*/
-                    break;
-            }
+            printf("Unexpected error\n");
+            return -1;
         }
+        /* show the UI */
     }
+
     return 0;
 }

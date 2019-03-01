@@ -1,15 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <errno.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <time.h>
+/* includes of external libs */
 
+/* own header include */
+#include "tcp_api.h"
+
+/* functions definitions */
+
+/* CLIENT SIDE */
 
 /************************************************************************************************/
 /**** tcp_connect ****
@@ -61,6 +57,8 @@ void tcp_disconnect(int server_fd)
 	}
 }
 
+/* BASIC PROTOCOL */
+
 /************************************************************************************************/
 /**** tcp_send_check **** to send and check reception of message
 INPUT -  server conneciton fd, message to send, lenght of memory pointed by buff
@@ -68,7 +66,7 @@ OUTPUT - size of memory recieved by server
 */
 int tcp_send_check(int server_fd, void *buf, size_t count)
 {
-    size_t bytes_copied = 0;
+    size_t bytes_sent = 0;
 
     /*send information to the server so he prepares to recieve the message*/
     if(send(server_fd, (const void *)&count, sizeof(size_t), 0) == -1)
@@ -84,22 +82,22 @@ int tcp_send_check(int server_fd, void *buf, size_t count)
         return 0;
     }
 
-    /*count the number of bytes copied*/
-    if(recv(server_fd, &bytes_copied, sizeof(size_t),0) == -1)
+    /*count the number of bytes recieved by the other parts*/
+    if(recv(server_fd, &bytes_sent, sizeof(size_t),0) == -1)
     {
         perror("Client failed to recv size copied ");
         return 0;
     }
 
-    return (int) bytes_copied;
+    return (int) bytes_sent;
 }
 
 /************************************************************************************************/
-/**** tcp_recv **** for client to recieve info from server
+/**** tcp_recv_check **** for client to recieve info from server and checksend
 INPUT -  server connection fd, buffer to recieve, lenght of memory pointed by buffer
 OUTPUT - size of memory recieved
 */
-int tcp_recv(int server_fd, void *buf, size_t count)
+int tcp_recv_check(int server_fd, void *buf, size_t count)
 {
     size_t msg_size = 0;
     size_t size_recv = 0;
@@ -115,15 +113,98 @@ int tcp_recv(int server_fd, void *buf, size_t count)
     if(msg_size > count)
     {
     	printf("Buffer overflowed \n");
-    	return 0;
+    	size_recv = -1;
+    }
+    else
+    {
+        /*recieve the information*/
+        if((size_recv=recv(server_fd, buf, count,0)) < 0)
+        {
+            perror("Client failed to recv the requested ");
+            size_recv = -1;
+        }
     }
 
-    /*recieve the information*/
-    if((size_recv=recv(server_fd, buf, count,0)) == -1)
+    /* confirm that it was recieved or send erro < 0*/
+    if(send(server_fd, (const void *)&size_recv, sizeof(size_t), 0) < 0)
     {
-        perror("Client failed to recv the requested ");
+        perror("Client failed to send request ");
         return 0;
     }
 
     return size_recv;
+}
+
+/* SERVER SIDE */
+
+
+/************************************************************************************************/
+/**** tcp_create **** for server to open business
+INPUT -  none
+OUTPUT - socked file descriptor or error -1
+*/
+int tcp_create(void)
+{
+    struct sockaddr_in server_addr;
+    int port = 8000;
+    int inet_reciv = -1;
+
+    /*opens a stream socket to listen to our applications*/
+    if((inet_reciv = socket(AF_INET, SOCK_STREAM, 0))==-1)
+    {
+        perror("Inet socket creation ");
+        return -1;
+    }
+
+    /*sets the address of our inet socket and binds it*/
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    if(bind(inet_reciv,(const struct sockaddr *) &server_addr, sizeof(struct sockaddr_in))<0)
+    {
+        perror("Inet socket bind ");
+        return -1;
+    }
+
+    //printf("The address is %s on port %d \n",inet_ntoa(server_addr.sin_addr),port );
+    return inet_reciv;
+}
+
+/************************************************************************************************/
+/**** tcp_accept **** for server to accept clients
+INPUT -  server file descriptor, pointer to memory for client address
+OUTPUT - new socket file descriptor for client communicaiton
+*/
+int tcp_accept(int server_fd, struct sockaddr_in * client_addr)
+{
+    socklen_t client_addr_size;
+    int client_fd = -1;
+
+    /*accept incoming connecion and save client address*/
+    client_addr_size = sizeof(struct sockaddr_in);
+    if(accept(server_fd, (struct sockaddr_in *) client_addr, &client_addr_size)<0)
+    {
+        perror("Failed to accept connection ");
+        return -1;
+    }
+    /*check if address is complete*/
+    if(client_addr_size < sizeof(struct sockaddr_in))
+    {
+        printf("Incomplete client address \n");
+    }
+
+    return client_fd;
+}
+
+/************************************************************************************************/
+/**** tcp_destroy **** destroys inet sockets
+INPUT - socket file descriptor
+OUTPUT - none
+*/
+void tcp_destroy(int fd)
+{
+    if(close(fd))
+    {
+        perror("INET socket close ");
+    }
 }
