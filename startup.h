@@ -14,7 +14,7 @@
 #define UDPROOTPORT 59000
 
 /* struct definitions */
-struct root_connection_s
+typedef struct root_connection_s
 {
     char streamname[45];
     char streamip[15];
@@ -30,28 +30,10 @@ struct root_connection_s
     bool bopt;
     bool dopt;
     bool hopt;
-}
-root_connection_default =
-{
-    "\0",
-    "\0",
-    -1,
-    "0.0.0.0",
-    TCPPORT,
-    UDPPORT,
-    ROOTIP,
-    UDPROOTPORT,
-    1,
-    1,
-    5,
-    false,
-    false,
-    false
-};
-typedef struct root_connection_s root_connection;
+}root_connection;
 
 /* funcitons definitios */
-bool connect_to_stream(root_connection *, int, const char **);
+int connect_to_stream(root_connection *, int, const char **);
 
 
 #endif
