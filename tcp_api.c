@@ -1,5 +1,3 @@
-/* includes of external libs */
-
 /* own header include */
 #include "tcp_api.h"
 
@@ -12,35 +10,36 @@
 INPUT - arguments, IP and port of server
 OUTPUT - connection socket file descriptor (or -1 in case of error)
 */
-int tcp_connect(char * IP_char, char * port_char)
+int tcp_connect(char * dns, int port)
 {
-    struct sockaddr_in inet_source;
-    int connect_socket = -1, port = -1;
+    int connect_socket = -1;
+    struct addrinfo hints,*res;
+    struct sockaddr_in addr;
 
-    /*get the port*/
-    if(sscanf(port_char, "%d", &port)==0)
-    {
-    	perror("Failed to get port of parents ");
-    	return -1;
-    }
+    memset(&hints,0,sizeof(hints));
+    hints.ai_family=AF_INET;
+    hints.ai_socktype=SOCK_DGRAM;
+    hints.ai_flags=AI_NUMERICSERV;
 
-    /*opens a INET stream socket*/
-    if((connect_socket = socket(AF_INET, SOCK_STREAM, 0))==-1)
+    if (getaddrinfo (dns,port,&hints,&res))
     {
-        perror("Failed to create server connection socket ");
+        perror("Get socket addr info ");
         return -1;
     }
 
-    /*set address and connect to server*/
-    inet_source.sin_family = AF_INET;
-    inet_source.sin_port = htons((int)port);
-    inet_aton(IP_char,&inet_source.sin_addr);
-    if(connect(connect_socket, (const struct sockaddr *) &inet_source, sizeof(inet_source))<0)
+    if((connect_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
+    {
+        perror("Inet socket creation ");
+        return -1;
+    }
+
+    if(connect(connect_socket, res->ai_addr, res->ai_addrlen)<0)
     {
         perror("Failed to connect to server ");
         return -1;
     }
 
+    freeaddrinfo(res);
     return connect_socket;
 }
 
@@ -143,31 +142,42 @@ int tcp_recv_check(int server_fd, void *buf, size_t count)
 INPUT -  none
 OUTPUT - socked file descriptor or error -1
 */
-int tcp_create(void)
+int tcp_create(int port)
 {
-    struct sockaddr_in server_addr;
-    int port = 8000;
-    int inet_reciv = -1;
+    int connect_socket = -1;
+    struct addrinfo hints,*res;
+    struct sockaddr_in addr;
 
-    /*opens a stream socket to listen to our applications*/
-    if((inet_reciv = socket(AF_INET, SOCK_STREAM, 0))==-1)
+    memset(&hints,0,sizeof(hints));
+    hints.ai_family=AF_INET;
+    hints.ai_socktype=SOCK_DGRAM;
+    hints.ai_flags=AI_NUMERICSERV;
+
+    if (getaddrinfo (NULL,port,&hints,&res))
+    {
+        perror("Get socket addr info ");
+        return -1;
+    }
+
+    if((connect_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
     {
         perror("Inet socket creation ");
         return -1;
     }
 
-    /*sets the address of our inet socket and binds it*/
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    if(bind(inet_reciv,(const struct sockaddr *) &server_addr, sizeof(struct sockaddr_in))<0)
+    if(bind(connect_socket,res->ai_addr, res->ai_protocol)<0)
     {
         perror("Inet socket bind ");
         return -1;
     }
 
-    //printf("The address is %s on port %d \n",inet_ntoa(server_addr.sin_addr),port );
-    return inet_reciv;
+    if(listen(connect_socket, 5))
+    {
+        perror("Failed to start listening ");
+    }
+
+    freeaddrinfo(res);
+    return connect_socket;
 }
 
 /************************************************************************************************/
@@ -182,15 +192,16 @@ int tcp_accept(int server_fd, struct sockaddr_in * client_addr)
 
     /*accept incoming connecion and save client address*/
     client_addr_size = sizeof(struct sockaddr_in);
-    if(accept(server_fd, (struct sockaddr_in *) client_addr, &client_addr_size)<0)
+    if(client_fd=(accept(server_fd, (struct sockaddr_in *) client_addr, &client_addr_size))<0)
     {
         perror("Failed to accept connection ");
         return -1;
     }
+    
     /*check if address is complete*/
-    if(client_addr_size < sizeof(struct sockaddr_in))
+    if(client_addr_size != sizeof(struct sockaddr_in))
     {
-        printf("Incomplete client address \n");
+        printf("Unexpected client address \n");
     }
 
     return client_fd;

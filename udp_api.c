@@ -1,30 +1,9 @@
-/* includes of external libs */
-
 /* own header include */
 #include "udp_api.h"
 
 /* functions definitions */
 
 /* GENERAL FUNCTIONS */
-
-/************************************************************************************************/
-/**** udp_open **** destroys inet sockets
-INPUT - none
-OUTPUT - returns socket file descriptor for udp messages
-*/
-int udp_open(void)
-{
-    int inet_reciv = -1;
-
-    /*opens a stream socket to listen to our applications*/
-    if((inet_reciv = socket(AF_INET, SOCK_DGRAM, 0))==-1)
-    {
-        perror("Inet socket creation ");
-        return -1;
-    }
-
-    return inet_reciv;
-}
 
 /************************************************************************************************/
 /**** udp_destroy **** destroys inet sockets
@@ -64,10 +43,16 @@ OUTPUT - bytes sent
 int udp_recv(int socket_fd, void * buf, size_t count, int flags, const struct sockaddr_in * peer)
 {
     int bytes_recv = 0;
+    socklen_t addrlen = sizeof(struct sockaddr_in);
 
-    if((bytes_recv= sendto(socket_fd, buf, count, flags, peer, (socketlen_t)sizeof(const struct sockaddr_in)))<0)
+    if((bytes_recv= recvfrom(socket_fd, buf, count, flags, peer, &addrlen))<0)
     {
         perror("recv udp ");
+    }
+
+    if( sizeof(struct sockaddr_in) != addrlen)
+    {
+        printf("Unexpected socket address\n" );
     }
 
     if (bytes_recv > count)
@@ -78,35 +63,77 @@ int udp_recv(int socket_fd, void * buf, size_t count, int flags, const struct so
     return bytes_recv;
 }
 
-/* SERVER SIDE */
+/* CLIENT EXCLUSIVE */
 
 /************************************************************************************************/
-/**** udp_create **** for server to open business
-INPUT -  none
-OUTPUT - socked file descriptor or error -1
+/**** udp_client **** destroys inet sockets
+INPUT - dns and port, and a pointer to the "peer"
+OUTPUT - returns socket file descriptor for udp messages
 */
-int udp_create(void)
+int udp_client(char * dns, int port, struct addrinfo * peer)
 {
-    struct sockaddr_in server_addr;
-    int port = 8000;
     int inet_reciv = -1;
+    struct addrinfo hints,*res;
+    struct sockaddr_in addr;
 
-    /*opens a stream socket to listen to our applications*/
-    if((inet_reciv = socket(AF_INET, SOCK_DGRAM, 0))==-1)
+    memset(&hints,0,sizeof(hints));
+    hints.ai_family=AF_INET;
+    hints.ai_socktype=SOCK_DGRAM;
+    hints.ai_flags=AI_NUMERICSERV;
+
+    if (getaddrinfo (dns,port,&hints,&res))
+    {
+        perror("Get socket addr info ");
+        return -1;
+    }
+
+    if((inet_reciv = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
     {
         perror("Inet socket creation ");
         return -1;
     }
 
-    /*sets the address of our inet socket and binds it*/
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    if(bind(inet_reciv,(const struct sockaddr *) &server_addr, sizeof(struct sockaddr_in))<0)
+    *peer = *res;
+    freeaddrinfo(res);
+    return inet_reciv;
+}
+
+/* SERVER EXCLUSIVE */
+
+/************************************************************************************************/
+/**** udp_server **** for server to open business
+INPUT -  none
+OUTPUT - socked file descriptor or error -1
+*/
+int udp_server(int port)
+{
+    int inet_reciv = -1;
+    struct addrinfo hints,*res;
+    struct sockaddr_in addr;
+
+    memset(&hints,0,sizeof(hints));
+    hints.ai_family=AF_INET;
+    hints.ai_socktype=SOCK_DGRAM;
+    hints.ai_flags=AI_PASSIVE|AI_NUMERICSERV;
+
+    if (getaddrinfo (NULL,port,&hints,&res))
     {
-        perror("Inet socket bind ");
+        perror("Get socket addr info ");
         return -1;
     }
 
+    if((inet_reciv = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
+    {
+        perror("Inet socket creation ");
+        return -1;
+    }
+
+    if(bind(inet_reciv,res->ai_addr,res->ai_addrlen) == -1 )
+    {
+        perror("Failed bind ");
+        return -1;
+    }
+
+    freeaddrinfo(res);
     return inet_reciv;
 }

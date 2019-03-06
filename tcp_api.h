@@ -18,12 +18,13 @@
 
 /* function defines */
 /* client side */
-int tcp_connect(char * , char * );
+int tcp_connect(char * , int);
 void tcp_disconnect(int );
+/* general functions */
 int tcp_send_check(int , void *, size_t );
 int tcp_recv_check(int , void *, size_t );
 /* server side */
-int tcp_create(void);
+int tcp_create(int);
 int tcp_accept(int , struct sockaddr_in * );
 void tcp_destroy(int );
 
