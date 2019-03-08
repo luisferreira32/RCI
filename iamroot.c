@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /* the user includes */
 #include "startup.h"
@@ -10,25 +11,16 @@
 
 /* our main */
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[])
+{
     /* auxiliary variables delcaration*/
     root_connection my_connect;
 
-    /* check stream ID */
-    if( argc < 2)
+    /* first set the strcut to it's values */
+    if(set_connection(&my_connect, argc, argv))
     {
-        /* did not connect to stream, show UI*/
-    }
-    else
-    {
-        /* connect to stream and show UI*/
-        /* stream connect returns success and fills pointer to connection */
-        if(connect_to_stream(&my_connect, argc, argv))
-        {
-            printf("Unexpected error\n");
-            return -1;
-        }
-        /* show the UI */
+        printf("Application will terminate\n");
+        return -1;
     }
 
     return 0;

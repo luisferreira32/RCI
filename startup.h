@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <unistd.h>
 
 /* defines */
 #define TCPPORT 58000
@@ -16,7 +19,7 @@
 /* struct definitions */
 typedef struct root_connection_s
 {
-    char streamname[45];
+    char streamname[54];
     char streamip[15];
     int streamport;
     char ipaddr[15];
@@ -33,7 +36,8 @@ typedef struct root_connection_s
 }root_connection;
 
 /* funcitons definitios */
-int connect_to_stream(root_connection *, int, const char **);
+void set_default(root_connection *);
+int set_connection(root_connection *, int, const char **);
 
 
 #endif
