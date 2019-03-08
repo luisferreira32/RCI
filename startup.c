@@ -12,7 +12,7 @@ void set_default(root_connection * my_connect)
 }
 
 /* check if a text is an IP */
-int isIP(char * text)
+int is_ip(char * text)
 {
     struct sockaddr_in test;
     return inet_pton(AF_INET, text, &(test.sin_addr));
@@ -36,7 +36,7 @@ int set_connection(root_connection * my_connect, int argc, const char ** argv)
             perror("Streamid reading ");
         }
         /* check if it's valid */
-        if(!isIP(my_connect->streamip))
+        if(!is_ip(my_connect->streamip))
         {
             printf("Check IP in streamid\n" );
             printf("%s\n", my_connect->streamip );
@@ -96,6 +96,7 @@ int set_connection(root_connection * my_connect, int argc, const char ** argv)
         else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i],"--help") == 0)
         {
           /* treat it */
+          return -1;
         }
         /* more else if clauses */
         else /* default: */

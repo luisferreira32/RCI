@@ -1,5 +1,5 @@
-#ifndef UI_H_
-#define UI_H_
+#ifndef GUI_H_
+#define GUI_H_
 
 /* includes of external libs */
 #include <stdio.h>
@@ -12,6 +12,8 @@
 /* struct definitions */
 
 /* funcitons definitios */
-int show_UI(void);
+void render_header(void);
+void render_insert(void);
+void render_help(void);
 
 #endif

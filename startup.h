@@ -38,6 +38,7 @@ typedef struct root_connection_s
 /* funcitons definitios */
 void set_default(root_connection *);
 int set_connection(root_connection *, int, const char **);
+int is_ip(char *);
 
 
 #endif
