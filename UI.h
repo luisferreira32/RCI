@@ -6,12 +6,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include "structs.h"
 
 /* defines */
 
 /* struct definitions */
 
 /* funcitons definitios */
-int show_UI(void);
+int show_UI(root_connection *);
+int read_command(char *, root_connection *);
 
 #endif

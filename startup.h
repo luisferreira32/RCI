@@ -9,31 +9,18 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
+#include "structs.h"
 
 /* defines */
-#define TCPPORT 58000
-#define UDPPORT 58000
-#define ROOTIP "193.136.138.142"
-#define UDPROOTPORT 59000
+#define DTCPPORT 58000
+#define DUDPPORT 58000
+#define DROOTIP "193.136.138.142"
+#define DUDPROOTPORT 59000
+#define DTCPSESSIONS 1
+#define DBESTPOPS 1
+#define DTSECS 5
+#define DFORMAT "ascii"
 
-/* struct definitions */
-typedef struct root_connection_s
-{
-    char streamname[54];
-    char streamip[15];
-    int streamport;
-    char ipaddr[15];
-    int tport;
-    int uport;
-    char rsaddr[15];
-    int rsport;
-    int tcpsessions;
-    int bestpops;
-    int tsecs;
-    bool bopt;
-    bool dopt;
-    bool hopt;
-}root_connection;
 
 /* funcitons definitios */
 void set_default(root_connection *);

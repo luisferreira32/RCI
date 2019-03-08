@@ -14,7 +14,7 @@ void udp_destroy(int fd)
 {
     if(close(fd))
     {
-        perror("INET socket close ");
+        perror("[LOG] INET socket close ");
     }
 }
 
@@ -29,8 +29,9 @@ int udp_send(int socket_fd, void * buf, size_t count, int flags, const struct so
 
     if((bytes_sent= sendto(socket_fd, buf, count, flags, peer, (socketlen_t)sizeof(const struct sockaddr_in)))<0)
     {
-        perror("send udp ");
+        perror("[LOG] send udp ");
     }
+    printf("[DEBUG] UDP message sent\n");
 
     return bytes_sent;
 }
@@ -47,18 +48,19 @@ int udp_recv(int socket_fd, void * buf, size_t count, int flags, const struct so
 
     if((bytes_recv= recvfrom(socket_fd, buf, count, flags, peer, &addrlen))<0)
     {
-        perror("recv udp ");
+        perror("[LOG] recv udp ");
     }
 
     if( sizeof(struct sockaddr_in) != addrlen)
     {
-        printf("Unexpected socket address\n" );
+        printf("[LOG] Unexpected socket address\n" );
     }
 
     if (bytes_recv > count)
     {
-        printf("overflowed buffer\n" );
+        printf("[LOG] overflowed buffer\n" );
     }
+    printf("[DEBUG] UDP message recieved\n");
 
     return bytes_recv;
 }
@@ -83,13 +85,13 @@ int udp_client(char * dns, int port, struct addrinfo * peer)
 
     if (getaddrinfo (dns,port,&hints,&res))
     {
-        perror("Get socket addr info ");
+        perror("[LOG] Get socket addr info ");
         return -1;
     }
 
     if((inet_reciv = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
     {
-        perror("Inet socket creation ");
+        perror("[LOG] Inet socket creation ");
         return -1;
     }
 
@@ -118,19 +120,19 @@ int udp_server(int port)
 
     if (getaddrinfo (NULL,port,&hints,&res))
     {
-        perror("Get socket addr info ");
+        perror("[LOG] Get socket addr info ");
         return -1;
     }
 
     if((inet_reciv = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
     {
-        perror("Inet socket creation ");
+        perror("[LOG] Inet socket creation ");
         return -1;
     }
 
     if(bind(inet_reciv,res->ai_addr,res->ai_addrlen) == -1 )
     {
-        perror("Failed bind ");
+        perror("[LOG] Failed bind ");
         return -1;
     }
 

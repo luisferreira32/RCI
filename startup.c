@@ -33,12 +33,12 @@ int set_connection(root_connection * my_connect, int argc, const char ** argv)
         /* read arguments of streamid */
         if(sscanf(argv[i], "%[^:]:%[^:]:%d", my_connect->streamname, my_connect->streamip, &my_connect->streamport) < 0)
         {
-            perror("Streamid reading ");
+            perror("[LOG] Streamid reading ");
         }
         /* check if it's valid */
         if(!is_ip(my_connect->streamip))
         {
-            printf("Check IP in streamid\n" );
+            printf("[LOG] Check IP in streamid\n" );
             printf("%s\n", my_connect->streamip );
             return -1;
         }
