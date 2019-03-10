@@ -2,7 +2,6 @@
 
 /* own header include */
 #include "UI.h"
-#include "GUI.h"
 
 /* functions */
 
