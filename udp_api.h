@@ -23,7 +23,7 @@ void udp_destroy(int);
 int udp_recv(int , void * , size_t , int , const struct sockaddr_in * );
 int udp_send(int , void * , size_t , int , const struct sockaddr_in * );
 /* client side */
-int udp_client(char * , int );
+int udp_client(char * , int , struct addrinfo *);
 /* server side */
 int udp_server( int );
 
