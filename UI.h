@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include "structs.h"
+#include "GUI.h"
 
 /* defines */
 
