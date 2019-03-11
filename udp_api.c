@@ -76,7 +76,6 @@ int udp_client(char * dns, int port, struct addrinfo * peer)
 {
     int inet_reciv = -1;
     struct addrinfo hints,*res;
-    struct sockaddr_in addr;
 
     memset(&hints,0,sizeof(hints));
     hints.ai_family=AF_INET;
@@ -89,7 +88,7 @@ int udp_client(char * dns, int port, struct addrinfo * peer)
         return -1;
     }
 
-    if((inet_reciv = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
+    if((inet_reciv = socket(res->ai_family, res->ai_socktype))==-1)
     {
         perror("[LOG] Inet socket creation ");
         return -1;

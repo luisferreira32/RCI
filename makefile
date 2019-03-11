@@ -1,8 +1,9 @@
 ############################# Makefile ##########################
-all: iamroot
+all: iamroot #bash
 iamroot: iamroot.o startup.o UI.o GUI.o
 	gcc -o iamroot iamroot.o startup.o UI.o GUI.o
-#
+
+# compiling one at the time
 startup.o: startup.c
 	gcc -o startup.o -c startup.c -W -Wall -ansi -pedantic
 GUI.o: GUI.c
@@ -12,6 +13,11 @@ UI.o: UI.c GUI.h
 iamroot.o: iamroot.c UI.h startup.h
 	gcc -o iamroot.o -c iamroot.c -W -Wall -ansi -pedantic
 
+# running bash script -NOT WORKING
+#bash:
+#	$(shell alias iamroot="./iamroot")
+
+# clean functions
 clean:
 	rm -rf *.o
 mrproper: clean

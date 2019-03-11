@@ -17,7 +17,6 @@ typedef struct root_connection_s
     int tsecs;
     bool bopt;
     bool dopt;
-    bool hopt;
     char format[4];
 }root_connection;
 
