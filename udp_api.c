@@ -23,12 +23,12 @@ void udp_destroy(int fd)
 INPUT - socket file descriptor buffer size and flags
 OUTPUT - bytes sent
 */
-int udp_send(int socket_fd, void * buf, size_t count, const struct sockaddr_in * peer, bool debug)
+int udp_send(int socket_fd, void * buf, size_t count, struct sockaddr_in * peer, bool debug)
 {
     int bytes_sent = 0;
 
     /* send datagram and check fo errors */
-    if((bytes_sent= sendto(socket_fd, buf, count, MSG_CONFIRM, peer, (socketlen_t)sizeof(const struct sockaddr_in)))<0)
+    if((bytes_sent= sendto(socket_fd, buf, count, MSG_CONFIRM, (const struct sockaddr *)peer, (socklen_t)sizeof(const struct sockaddr_in)))<0)
     {
         perror("[LOG] send udp ");
     }
@@ -46,13 +46,14 @@ int udp_send(int socket_fd, void * buf, size_t count, const struct sockaddr_in *
 INPUT - socket file descriptor buffer size and flags
 OUTPUT - bytes sent
 */
-int udp_recv(int socket_fd, void * buf, size_t count, const struct sockaddr_in * peer, bool debug)
+int udp_recv(int socket_fd, void * buf, size_t count, struct sockaddr_in * peer, bool debug)
 {
     int bytes_recv = 0;
+    char * msg;
     socklen_t addrlen = sizeof(struct sockaddr_in);
 
     /* recieve message */
-    if((bytes_recv= recvfrom(socket_fd, buf, count, MSG_WAITALL, peer, &addrlen))<0)
+    if((bytes_recv= recvfrom(socket_fd, buf, count, 0, (struct sockaddr *)peer, &addrlen))<0)
     {
         perror("[LOG] recv udp ");
     }
@@ -68,8 +69,10 @@ int udp_recv(int socket_fd, void * buf, size_t count, const struct sockaddr_in *
         printf("[LOG] overflowed buffer\n" );
     }
 
-    buf[bytes_recv] = '\0';
+    msg = buf;
+    msg[bytes_recv] = '\0';
 
+    /* debug option */
     if(debug == true)
     {
         printf("[DEBUG] UDP message with %d bytes recieved\n", bytes_recv);
@@ -89,6 +92,14 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
 {
     int inet_reciv = -1;
     struct addrinfo hints,*res;
+    char port_buffer[10];
+
+    if(sprintf(port_buffer, "%d", port) <0)
+    {
+        perror("[LOG] Getting port ");
+        return -1;
+    }
+    port_buffer[9] = '\0';
 
     /* connect based on DNS*/
     if(ip == NULL && dns != NULL)
@@ -98,21 +109,21 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
         hints.ai_socktype=SOCK_DGRAM;
         hints.ai_flags=AI_NUMERICSERV;
 
-        if (getaddrinfo (dns,port,&hints,&res))
+        if (getaddrinfo (dns,port_buffer,&hints,&res))
         {
             perror("[LOG] Get socket addr info ");
             return -1;
         }
 
-        *peer = res->ai_addr;
+        *peer = *((struct sockaddr_in *) res->ai_addr);
         freeaddrinfo(res);
     }
     /* connect based on IP */
     else if(ip != NULL)
     {
-        hints.sin_family = AF_INET;
-        hints.sin_port = htons(59000);
-        if(inet_aton(ip, peer->sin_addr)==0)
+        peer->sin_family = AF_INET;
+        peer->sin_port = htons(59000);
+        if(inet_aton(ip, &(peer->sin_addr))==0)
         {
             printf("[LOG] Invalid IP address %s", ip);
             return -1;
@@ -120,7 +131,7 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
     }
     else
     {
-        printf("[LOG] Need IP or DNS for UDP connection\n", );
+        printf("[LOG] Need IP or DNS for UDP connection\n");
         return -1;
     }
 
@@ -143,6 +154,7 @@ OUTPUT - socked file descriptor or error -1
 int udp_server(int port)
 {
     int inet_reciv = -1;
+    char port_buffer[10];
     struct addrinfo hints,*res;
     struct sockaddr_in addr;
 
@@ -151,7 +163,14 @@ int udp_server(int port)
     hints.ai_socktype=SOCK_DGRAM;
     hints.ai_flags=AI_PASSIVE|AI_NUMERICSERV;
 
-    if (getaddrinfo (NULL,port,&hints,&res))
+    if(sprintf(port_buffer, "%d", port) <0)
+    {
+        perror("[LOG] Getting port ");
+        return -1;
+    }
+    port_buffer[9] = '\0';
+
+    if (getaddrinfo (NULL,port_buffer,&hints,&res))
     {
         perror("[LOG] Get socket addr info ");
         return -1;

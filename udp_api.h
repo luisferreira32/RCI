@@ -21,13 +21,13 @@
 /* function defines */
 /* general functions */
 void udp_destroy(int);
-int udp_recv(int , void * , size_t , int , const struct sockaddr_in * );
-int udp_send(int , void * , size_t , int , const struct sockaddr_in * );
+int udp_recv(int , void * , size_t , struct sockaddr_in * , bool);
+int udp_send(int , void * , size_t , struct sockaddr_in * , bool);
 /* client side */
-int udp_create_client(char * , int , struct addrinfo *);
+int udp_create_client(char * ,char *, int , struct sockaddr_in *);
 /* server side */
 int udp_server( int );
 
 
 
-#endif UDP_API_H_
+#endif
