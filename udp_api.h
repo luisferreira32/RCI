@@ -11,6 +11,7 @@
 #include <sys/un.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -21,7 +22,7 @@
 /* function defines */
 /* general functions */
 void udp_destroy(int);
-int udp_recv(int , void * , size_t , struct sockaddr_in * , bool);
+int udp_recv(int , void * , int , struct sockaddr_in * , bool);
 int udp_send(int , void * , size_t , struct sockaddr_in * , bool);
 /* client side */
 int udp_create_client(char * ,char *, int , struct sockaddr_in *);

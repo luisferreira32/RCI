@@ -13,7 +13,7 @@
 int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
-    root_connection my_connect;
+    iamroot_connection my_connect;
     client_interface my_ci;
 
     /* first set the strcut to it's values */

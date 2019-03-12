@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include "structs.h"
+#include "root_api.h"
 
 /* defines */
 #define DTCPPORT 58000
@@ -23,8 +24,8 @@
 
 
 /* funcitons definitios */
-void set_default(root_connection *, client_interface *);
-int set_connection(root_connection *, client_interface *, int, const char **);
+void set_default(iamroot_connection *, client_interface *);
+int set_connection(iamroot_connection *, client_interface *, int, const char **);
 int is_ip(char *);
 void display_help(void);
 

@@ -2,7 +2,7 @@
 #define STRUCTS_H_
 
 /* struct definitions */
-typedef struct root_connection_s
+typedef struct iamroot_connection_s
 {
     char streamname[54];
     char streamip[15];
@@ -15,7 +15,7 @@ typedef struct root_connection_s
     int tcpsessions;
     int bestpops;
     int tsecs;
-}root_connection;
+}iamroot_connection;
 
 typedef struct client_interface_s
 {

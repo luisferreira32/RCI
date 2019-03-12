@@ -15,7 +15,7 @@
 /* struct definitions */
 
 /* funcitons definitios */
-int show_UI(root_connection *, client_interface * );
+int show_UI(iamroot_connection *, client_interface * );
 int read_command(char *, client_interface *);
 
 #endif

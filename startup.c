@@ -6,7 +6,7 @@
 /* functions */
 
 /* sets the default value for connection */
-void set_default(root_connection * my_connect, client_interface * my_ci)
+void set_default(iamroot_connection * my_connect, client_interface * my_ci)
 {
     strcpy(my_connect->streamname,"\0");
     strcpy(my_connect->streamip, "\0");
@@ -38,10 +38,11 @@ int is_ip(char * text)
 }
 
 /* sets the connection struct according to arguments */
-int set_connection(root_connection * my_connect, client_interface * my_ci,int argc, const char ** argv)
+int set_connection(iamroot_connection * my_connect, client_interface * my_ci,int argc, const char ** argv)
 {
     /* declaration */
     int i = 1;
+    char answer_buffer[500];
 
     /* set default */
     set_default(my_connect, my_ci);
@@ -49,7 +50,11 @@ int set_connection(root_connection * my_connect, client_interface * my_ci,int ar
     /* if cast with no arguments proceed as instructed */
     if ( argc < 2)
     {
-        /* code */
+        if(run_request("DUMP\n", answer_buffer, 500, my_connect, my_ci))
+        {
+            printf("[LOG] Error on running request\n");
+        }
+        printf("\n%s\n", answer_buffer);
         return -1;
     }
 

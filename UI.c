@@ -6,7 +6,7 @@
 /* functions */
 
 /* main function of the UI */
-int show_UI(root_connection * my_connect, client_interface * my_ci)
+int show_UI(iamroot_connection * my_connect, client_interface * my_ci)
 {
     /* variables */
     int quit = 0;

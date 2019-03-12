@@ -1,8 +1,6 @@
 /* own header include */
 #include "udp_api.h"
 
-/* functions definitions */
-
 /* GENERAL FUNCTIONS */
 
 /************************************************************************************************/
@@ -46,7 +44,7 @@ int udp_send(int socket_fd, void * buf, size_t count, struct sockaddr_in * peer,
 INPUT - socket file descriptor buffer size and flags
 OUTPUT - bytes sent
 */
-int udp_recv(int socket_fd, void * buf, size_t count, struct sockaddr_in * peer, bool debug)
+int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bool debug)
 {
     int bytes_recv = 0;
     char * msg;
@@ -156,7 +154,6 @@ int udp_server(int port)
     int inet_reciv = -1;
     char port_buffer[10];
     struct addrinfo hints,*res;
-    struct sockaddr_in addr;
 
     memset(&hints,0,sizeof(hints));
     hints.ai_family=AF_INET;
