@@ -15,9 +15,13 @@ typedef struct root_connection_s
     int tcpsessions;
     int bestpops;
     int tsecs;
-    bool bopt;
-    bool dopt;
-    char format[4];
 }root_connection;
+
+typedef struct client_interface_s
+{
+    bool debug;
+    bool display;
+    char format[4];
+}client_interface;
 
 #endif

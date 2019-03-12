@@ -6,7 +6,7 @@
 /* functions */
 
 /* main function of the UI */
-int show_UI(root_connection * my_connect)
+int show_UI(root_connection * my_connect, client_interface * my_ci)
 {
     /* variables */
     int quit = 0;
@@ -22,14 +22,14 @@ int show_UI(root_connection * my_connect)
         {
             perror("[LOG] Failed to read command ");
         }
-        quit = read_command(command_buffer, my_connect);
+        quit = read_command(command_buffer, my_ci);
     }
 
     return 0;
 }
 
 /* interprets the user commands */
-int read_command(char * command_buffer, root_connection * my_connect)
+int read_command(char * command_buffer, client_interface * my_ci)
 {
     if(strcmp(command_buffer, "streams") == 0)
     {
@@ -41,27 +41,27 @@ int read_command(char * command_buffer, root_connection * my_connect)
     }
     else if(strcmp(command_buffer, "display on") == 0)
     {
-        my_connect->bopt = true;
+        my_ci->display = true;
     }
     else if(strcmp(command_buffer, "display off") == 0)
     {
-        my_connect->bopt = false;
+        my_ci->display = false;
     }
     else if(strcmp(command_buffer, "format ascii") == 0)
     {
-        strcpy(my_connect->format, "ascii");
+        strcpy(my_ci->format, "ascii");
     }
     else if(strcmp(command_buffer, "format hex") == 0)
     {
-        strcpy(my_connect->format, "hex");
+        strcpy(my_ci->format, "hex");
     }
     else if(strcmp(command_buffer, "debug on") == 0)
     {
-
+        my_ci->debug = true;
     }
     else if(strcmp(command_buffer, "debug off") == 0)
     {
-
+        my_ci->debug = false;
     }
     else if(strcmp(command_buffer, "tree") == 0)
     {

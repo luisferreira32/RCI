@@ -23,8 +23,8 @@
 
 
 /* funcitons definitios */
-void set_default(root_connection *);
-int set_connection(root_connection *, int, const char **);
+void set_default(root_connection *, client_interface *);
+int set_connection(root_connection *, client_interface *, int, const char **);
 int is_ip(char *);
 void display_help(void);
 

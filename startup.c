@@ -6,7 +6,7 @@
 /* functions */
 
 /* sets the default value for connection */
-void set_default(root_connection * my_connect)
+void set_default(root_connection * my_connect, client_interface * my_ci)
 {
     strcpy(my_connect->streamname,"\0");
     strcpy(my_connect->streamip, "\0");
@@ -23,10 +23,10 @@ void set_default(root_connection * my_connect)
     my_connect->bestpops = DBESTPOPS;
     my_connect->tsecs = DTSECS;
 
-    my_connect->bopt = true;
-    my_connect->dopt = false;
+    my_ci->display = true;
+    my_ci->debug = false;
 
-    strcpy(my_connect->format, DFORMAT);
+    strcpy(my_ci->format, DFORMAT);
 
 }
 
@@ -38,13 +38,13 @@ int is_ip(char * text)
 }
 
 /* sets the connection struct according to arguments */
-int set_connection(root_connection * my_connect, int argc, const char ** argv)
+int set_connection(root_connection * my_connect, client_interface * my_ci,int argc, const char ** argv)
 {
     /* declaration */
     int i = 1;
 
     /* set default */
-    set_default(my_connect);
+    set_default(my_connect, my_ci);
 
     /* if cast with no arguments proceed as instructed */
     if ( argc < 2)
@@ -270,12 +270,12 @@ int set_connection(root_connection * my_connect, int argc, const char ** argv)
         else if (strcmp(argv[i], "-b") == 0)
         {
           /* treat it */
-          my_connect->bopt = false;
+          my_ci->display = false;
         }
         else if (strcmp(argv[i], "-d") == 0)
         {
           /* treat it */
-          my_connect->dopt = true;
+          my_ci->debug = true;
         }
         else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i],"--help") == 0)
         {
