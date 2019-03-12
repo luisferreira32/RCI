@@ -12,5 +12,7 @@
 #include "udp_api.h"
 
 int run_request(char * , char * , size_t , iamroot_connection *, client_interface * );
+int process_answer(char * , peer_conneciton *);
+
 
 #endif

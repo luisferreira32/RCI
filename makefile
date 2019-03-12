@@ -1,6 +1,6 @@
 ############################# Makefile ##########################
 all: iamroot #bash
-iamroot: iamroot.o startup.o UI.o GUI.o udp_api.o root_api.o
+iamroot: iamroot.o startup.o UI.o GUI.o udp_api.o root_api.o stream_life.o
 	gcc -o iamroot *.o
 
 # compiling one at the time
@@ -14,6 +14,8 @@ udp_api.o: udp_api.c udp_api.h
 	gcc -o udp_api.o -c udp_api.c -W -Wall
 root_api.o: root_api.c root_api.h udp_api.h
 	gcc -o root_api.o -c root_api.c -W -Wall -ansi -pedantic
+stream_life.o: stream_life.c stream_life.h root_api.h
+	gcc -o stream_life.o -c stream_life.c -W -Wall -ansi -pedantic
 
 iamroot.o: iamroot.c UI.h startup.h
 	gcc -o iamroot.o -c iamroot.c -W -Wall -ansi -pedantic

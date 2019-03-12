@@ -24,4 +24,12 @@ typedef struct client_interface_s
     char format[4];
 }client_interface;
 
+typedef struct peer_connection_s
+{
+    bool amiroot;
+    int accessfd;
+    int fatherfd;
+    int * childrenfd;
+}peer_conneciton;
+
 #endif

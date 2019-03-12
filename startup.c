@@ -12,7 +12,7 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci)
     strcpy(my_connect->streamip, "\0");
     my_connect->streamport = -1;
 
-    strcpy(my_connect->ipaddr, "\0");
+    strcpy(my_connect->ipaddr, "0.0.0.0");
 
     my_connect->tport = DTCPPORT;
     my_connect->uport = DUDPPORT;
@@ -30,6 +30,14 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci)
 
 }
 
+void set_myselfdefault(peer_conneciton * myself)
+{
+    myself->amiroot = true;
+    myself->accessfd = -1;
+    myself->fatherfd = -1;
+    myself->childrenfd = NULL;
+}
+
 /* check if a text is an IP */
 int is_ip(char * text)
 {
@@ -38,7 +46,7 @@ int is_ip(char * text)
 }
 
 /* sets the connection struct according to arguments */
-int set_connection(iamroot_connection * my_connect, client_interface * my_ci,int argc, const char ** argv)
+int set_connection(iamroot_connection * my_connect, client_interface * my_ci, int argc, const char ** argv)
 {
     /* declaration */
     int i = 1;
@@ -47,14 +55,18 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci,int
     /* set default */
     set_default(my_connect, my_ci);
 
-    /* if cast with no arguments proceed as instructed */
-    if ( argc < 2)
+    /* if cast with no stream ID proceed as instructed */
+    if ( argc < 2 || argv[i][0] == 45)
     {
         if(run_request("DUMP\n", answer_buffer, 500, my_connect, my_ci))
         {
             printf("[LOG] Error on running request\n");
+            return -1;
         }
-        printf("\n%s\n", answer_buffer);
+        if(process_answer(answer_buffer, NULL))
+        {
+            printf("[LOG] Error processing answer\n");
+        }
         return -1;
     }
 

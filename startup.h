@@ -25,6 +25,7 @@
 
 /* funcitons definitios */
 void set_default(iamroot_connection *, client_interface *);
+void set_myselfdefault(peer_conneciton *);
 int set_connection(iamroot_connection *, client_interface *, int, const char **);
 int is_ip(char *);
 void display_help(void);
