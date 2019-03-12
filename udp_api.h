@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -23,7 +24,7 @@ void udp_destroy(int);
 int udp_recv(int , void * , size_t , int , const struct sockaddr_in * );
 int udp_send(int , void * , size_t , int , const struct sockaddr_in * );
 /* client side */
-int udp_client(char * , int , struct addrinfo *);
+int udp_create_client(char * , int , struct addrinfo *);
 /* server side */
 int udp_server( int );
 
