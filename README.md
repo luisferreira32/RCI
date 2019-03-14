@@ -1,3 +1,3 @@
 # RCI
 
-Internet communication
+Internet communication using UDP and TCP with peer to peer and client server
