@@ -20,8 +20,10 @@
 /* my libs*/
 #include "structs.h"
 #include "udp_api.h"
+#include "root_api.h"
 
 /* functions */
 int open_access_server(int, peer_conneciton *);
+int refresh_root(iamroot_connection * , client_interface *);
 
 #endif

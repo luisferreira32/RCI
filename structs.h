@@ -6,6 +6,7 @@
 #define SBUFFSIZE 100
 #define MBUFFSIZE 500
 #define BBUFFSIZE 1000
+#define STDIN 0
 
 /* struct definitions */
 typedef struct iamroot_connection_s

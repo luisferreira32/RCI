@@ -31,6 +31,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
     }
     if(strcmp(buff,"REMOVE")==0)
     {
+        udp_destroy(socketfd);
         return 0;
     }
     /* recieve check */
@@ -87,7 +88,7 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
     else if(strcmp(first, "ERROR") == 0)
     {
         /* prints log */
-        printf("\n%s", answer);
+        printf("\n[ROOT] %s\n", answer);
         return -1;
     }
     else
