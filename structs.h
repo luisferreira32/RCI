@@ -1,6 +1,12 @@
 #ifndef STRUCTS_H_
 #define STRUCTS_H_
 
+
+/* constants */
+#define SBUFFSIZE 100
+#define MBUFFSIZE 500
+#define BBUFFSIZE 1000
+
 /* struct definitions */
 typedef struct iamroot_connection_s
 {

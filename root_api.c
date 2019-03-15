@@ -8,25 +8,25 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
 {
     /* variables */
     int socketfd = -1;
-    char buff[1000];
+    char buff[BBUFFSIZE];
     struct sockaddr_in peer;
 
     /* create socket for client type */
     if((socketfd = udp_create_client(NULL, my_connect->rsaddr, my_connect->rsport, &peer))< 0)
     {
-        perror("[LOG] Failed to create socket to root ");
+        perror("[ERROR] Failed to create socket to root ");
         return -1;
     }
     /* send check */
     if(udp_send(socketfd, request, strlen(request), &peer,my_ci->debug) < 0)
     {
-        perror("[LOG] Failed to send request to root ");
+        perror("[ERROR] Failed to send request to root ");
         return -1;
     }
     /* and exit IF we're removing*/
     if(sscanf(request,"%s ",buff)<0)
     {
-        perror("[LOG] sscanf failed ");
+        perror("[ERROR] sscanf of answer failed ");
         return -1;
     }
     if(strcmp(buff,"REMOVE")==0)
@@ -34,14 +34,14 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
         return 0;
     }
     /* recieve check */
-    if(udp_recv(socketfd, buff, 1000, &peer, my_ci->debug) < 0 )
+    if(udp_recv(socketfd, buff, BBUFFSIZE, &peer, my_ci->debug) < 0 )
     {
-        perror("[LOG] Failed to recv answer from root");
+        perror("[ERROR] Failed to recv answer from root");
         return -1;
     }
     if(buffer_size < strlen(buff))
     {
-        printf("[LOG] Buffer overflowed \n");
+        printf("[ERROR] Root answer buffer overflowed \n");
         return -1;
     }
 
@@ -53,26 +53,31 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
 }
 
 /* takes the awnser buff and understands stuff */
-int process_answer(char * answer, peer_conneciton * myself)
+int process_answer(char * answer, iamroot_connection * my_connect, peer_conneciton * myself)
 {
     /*variables*/
     char first[10];
-    char buff[500];
+    char buff[BBUFFSIZE-10];
 
     /* get the keyword */
     if(sscanf(answer,"%s %s", first, buff) == 0)
     {
-        printf("[LOG] Error reading root server reply\n");
+        printf("[ERROR] Error reading root server reply\n");
     }
     /* compare with possible replies */
     if(strcmp(first,"URROOT") == 0)
     {
         /* open access server and connect to stream */
-
+        myself->amiroot = true;
+        if(open_access_server(my_connect->uport, myself))
+        {
+            printf("[ERROR] Failed to open access server \n");
+        }
     }
     else if(strcmp(first,"ROOTIS") == 0)
     {
         /* do request on access server  */
+        myself->amiroot = false;
     }
     else if(strcmp(first, "STREAMS") == 0)
     {

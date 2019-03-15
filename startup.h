@@ -13,6 +13,7 @@
 #include "root_api.h"
 
 /* defines */
+/* defaults */
 #define DTCPPORT 58000
 #define DUDPPORT 58000
 #define DROOTIP "193.136.138.142"

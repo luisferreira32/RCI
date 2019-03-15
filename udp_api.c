@@ -12,7 +12,7 @@ void udp_destroy(int fd)
 {
     if(close(fd))
     {
-        perror("[LOG] INET socket close ");
+        perror("[ERROR] INET socket close ");
     }
 }
 
@@ -28,7 +28,7 @@ int udp_send(int socket_fd, void * buf, size_t count, struct sockaddr_in * peer,
     /* send datagram and check fo errors */
     if((bytes_sent= sendto(socket_fd, buf, count, MSG_CONFIRM, (const struct sockaddr *)peer, (socklen_t)sizeof(const struct sockaddr_in)))<0)
     {
-        perror("[LOG] send udp ");
+        perror("[ERROR] send udp ");
     }
 
     if (debug == true)
@@ -53,7 +53,7 @@ int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bo
     /* recieve message */
     if((bytes_recv= recvfrom(socket_fd, buf, count, 0, (struct sockaddr *)peer, &addrlen))<0)
     {
-        perror("[LOG] recv udp ");
+        perror("[ERROR] recv udp ");
     }
 
     /* treat basic anomalies */
@@ -94,7 +94,7 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
 
     if(sprintf(port_buffer, "%d", port) <0)
     {
-        perror("[LOG] Getting port ");
+        perror("[ERROR] Getting port ");
         return -1;
     }
     port_buffer[9] = '\0';
@@ -109,7 +109,7 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
 
         if (getaddrinfo (dns,port_buffer,&hints,&res))
         {
-            perror("[LOG] Get socket addr info ");
+            perror("[ERROR] Get socket addr info ");
             return -1;
         }
 
@@ -135,7 +135,7 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
 
     if((inet_reciv = socket(AF_INET, SOCK_DGRAM, 0))==-1)
     {
-        perror("[LOG] Inet socket creation ");
+        perror("[ERROR] Inet socket creation ");
         return -1;
     }
 
@@ -162,26 +162,26 @@ int udp_server(int port)
 
     if(sprintf(port_buffer, "%d", port) <0)
     {
-        perror("[LOG] Getting port ");
+        perror("[ERROR] Getting udp port ");
         return -1;
     }
     port_buffer[9] = '\0';
 
     if (getaddrinfo (NULL,port_buffer,&hints,&res))
     {
-        perror("[LOG] Get socket addr info ");
+        perror("[ERROR] Get socket addr info ");
         return -1;
     }
 
     if((inet_reciv = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
     {
-        perror("[LOG] Inet socket creation ");
+        perror("[ERROR] Inet socket creation ");
         return -1;
     }
 
     if(bind(inet_reciv,res->ai_addr,res->ai_addrlen) == -1 )
     {
-        perror("[LOG] Failed bind ");
+        perror("[ERROR] Failed bind ");
         return -1;
     }
 

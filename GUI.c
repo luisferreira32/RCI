@@ -24,7 +24,7 @@ void render_header(void)
 
 void render_insert(void)
 {
-    printf(">> ");
+    printf("iamroot >> ");
 }
 
 void render_help(void)

@@ -8,11 +8,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+
 #include "structs.h"
 #include "udp_api.h"
+#include "access_server.h"
 
 int run_request(char * , char * , size_t , iamroot_connection *, client_interface * );
-int process_answer(char * , peer_conneciton *);
+int process_answer(char * , iamroot_connection *, peer_conneciton *);
 
 
 #endif

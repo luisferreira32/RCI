@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include "structs.h"
 #include "GUI.h"
+#include "root_api.h"
 
 /* defines */
 
@@ -16,6 +17,6 @@
 
 /* funcitons definitios */
 int show_UI(iamroot_connection *, client_interface * );
-int read_command(char *, client_interface *);
+int read_command(char *, iamroot_connection *, client_interface *);
 
 #endif

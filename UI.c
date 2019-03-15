@@ -20,20 +20,32 @@ int show_UI(iamroot_connection * my_connect, client_interface * my_ci)
         render_insert();
         if(scanf("%s",command_buffer) < 0)
         {
-            perror("[LOG] Failed to read command ");
+            perror("[ERROR] Failed to read command ");
+            continue;
         }
-        quit = read_command(command_buffer, my_ci);
+        quit = read_command(command_buffer, my_connect, my_ci);
     }
 
     return 0;
 }
 
 /* interprets the user commands */
-int read_command(char * command_buffer, client_interface * my_ci)
+int read_command(char * command_buffer, iamroot_connection * my_connect, client_interface * my_ci)
 {
+    /*variables*/
+    char answer_buffer[MBUFFSIZE];
+
+    /* command intrepertation */
     if(strcmp(command_buffer, "streams") == 0)
     {
-
+        if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci))
+        {
+            printf("[ERROR] Error on running dump request\n");
+        }
+        if(process_answer(answer_buffer, NULL, NULL))
+        {
+            printf("[ERROR] Error processing dump answer\n");
+        }
     }
     else if(strcmp(command_buffer, "status") == 0)
     {
@@ -73,7 +85,7 @@ int read_command(char * command_buffer, client_interface * my_ci)
     }
     else if(strcmp(command_buffer, "HELP") == 0)
     {
-
+        render_header();
     }
     else
     {

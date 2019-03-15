@@ -50,20 +50,20 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
 {
     /* declaration */
     int i = 1;
-    char answer_buffer[500];
+    char answer_buffer[MBUFFSIZE];
 
     /* set default */
     set_default(my_connect, my_ci);
 
     /* if cast with no stream ID proceed as instructed */
-    if ( argc < 2 || argv[i][0] == 45)
+    if ( argc < 2 || (argv[i][0] == '-' && argv[i][1] != 'h'))
     {
-        if(run_request("DUMP\n", answer_buffer, 500, my_connect, my_ci))
+        if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci))
         {
             printf("[LOG] Error on running request\n");
             return -1;
         }
-        if(process_answer(answer_buffer, NULL))
+        if(process_answer(answer_buffer, NULL, NULL))
         {
             printf("[LOG] Error processing answer\n");
         }
@@ -80,10 +80,10 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
             return -1;
         }
         /* check if it's valid */
-        if(!is_ip(my_connect->streamip))
+        if(!is_ip(my_connect->streamip) || my_connect->streamport < 1025)
         {
-            printf("[LOG] Check IP in streamid\n" );
-            printf("%s\n", my_connect->streamip );
+            printf("[LOG] Check IP & port in streamid\n" );
+            printf("%s:%d\n", my_connect->streamip, my_connect->streamport );
             return -1;
         }
         i++;
@@ -304,7 +304,8 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
         /* more else if clauses */
         else /* default: */
         {
-            printf("\n%s is an invalid command\n-h or --help  option for command list\n\n", argv[i]);
+            printf("\n[ERROR] \"%s\" is an invalid command\n-h or --help  option for command list\n\n", argv[i]);
+            return -1;
         }
     }
 
@@ -314,9 +315,9 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
 /* display help options */
 void display_help(void)
 {
-    printf("iamroot [<streamID>] [-i <ipaddr>] [-t <tport>] [-u <uport>]\n");
-    printf("    [-s <rsaddr>[:<rsport>]] [-p <tcpsessions>] \n");
-    printf("    [-n <bestpops>] [-x <tsecs>][-b] [-d] [-h]\n\n");
+    printf("\niamroot [<streamID>] [-i <ipaddr>] [-t <tport>] [-u <uport>]\n");
+    printf("        [-s <rsaddr>[:<rsport>]] [-p <tcpsessions>] \n");
+    printf("        [-n <bestpops>] [-x <tsecs>][-b] [-d] [-h]\n\n");
 
     printf("<streamID> is the stream identification with syntax <streamname>:<IP>:<port>\n");
     printf("-i <ipaddr> is the interface IP address\n" );
