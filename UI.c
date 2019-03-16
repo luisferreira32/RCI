@@ -14,7 +14,7 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     /* command intrepertation */
     if(strcmp(command_buffer, "streams\n") == 0)
     {
-        if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci))
+        if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci->debug))
         {
             printf("[ERROR] Error on running dump request\n");
         }

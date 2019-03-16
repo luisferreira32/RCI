@@ -4,7 +4,7 @@
 /* GENERAL FUNCTIONS */
 
 /* creates udp, sends udp, recieves udp, closes udp */
-int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroot_connection * my_connect, client_interface * my_ci)
+int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroot_connection * my_connect, bool debug)
 {
     /* variables */
     int socketfd = -1;
@@ -18,7 +18,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
         return -1;
     }
     /* send check */
-    if(udp_send(socketfd, request, strlen(request), &peer,my_ci->debug) < 0)
+    if(udp_send(socketfd, request, strlen(request), &peer,debug) < 0)
     {
         perror("[ERROR] Failed to send request to root ");
         return -1;
@@ -35,7 +35,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
         return 0;
     }
     /* recieve check */
-    if(udp_recv(socketfd, buff, BBUFFSIZE, &peer, my_ci->debug) < 0 )
+    if(udp_recv(socketfd, buff, BBUFFSIZE, &peer, debug) < 0 )
     {
         perror("[ERROR] Failed to recv answer from root");
         return -1;

@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE];
     int quit = 0, selected = 0;
-    struct timeval root_timer;
+    struct timeval root_timer, *timerp = NULL;
     /* main variables */
     iamroot_connection my_connect;
     client_interface my_ci;
@@ -42,7 +42,7 @@ int main(int argc, char const *argv[])
         return -1;
     }
     /* based on request to root server */
-    if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, &my_ci))
+    if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
     {
         printf("[ERROR] Running request failed\n");
         return -1;
@@ -58,12 +58,22 @@ int main(int argc, char const *argv[])
     while (quit == 0)
     {
         /* reset every loop */
-        root_timer.tv_usec = 0;
-        root_timer.tv_sec = my_connect.tsecs;
+        /* root specific -> timer & access server */
+        if(myself.amiroot == true)
+        {
+            root_timer.tv_usec = 0;
+            root_timer.tv_sec = my_connect.tsecs;
+            timerp = &root_timer;
+        }
+        else
+        {
+            timerp = NULL;
+        }
+        /* all other file descritors*/
         FD_SET(STDIN, &rfds);
 
-        /* NUMBER OF FD IS my_connect.tcpsessions+2 !!!!*/
-        if((selected = select(1,&rfds, NULL, NULL, &root_timer))< 0)
+        /* NUMBER OF FD IS myself.nofchildren + 1 (father) + 1(stdin) + 1(access) !!!!*/
+        if((selected = select(1,&rfds, NULL, NULL, timerp))< 0)
         {
             perror("[ERROR] Select failed ");
             break;
@@ -71,7 +81,7 @@ int main(int argc, char const *argv[])
 
         if(selected == 0)
         {
-            if(refresh_root(&my_connect, &my_ci) < 0)
+            if(refresh_root(&my_connect, my_ci.debug) < 0)
             {
                 printf("[ERROR] Failed to refresh root ownership\n");
                 break;
@@ -109,7 +119,7 @@ int main(int argc, char const *argv[])
             return -1;
         }
         /* run request */
-        if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, &my_ci))
+        if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
         {
             printf("[ERROR] Error on running remove request\n");
             return -1;

@@ -23,7 +23,10 @@
 #include "root_api.h"
 
 /* functions */
+/* root */
 int open_access_server(int, peer_conneciton *);
-int refresh_root(iamroot_connection * , client_interface *);
+int refresh_root(iamroot_connection * , bool );
+/* non root */
+int pop_request(char*, size_t, char*, int, bool);
 
 #endif

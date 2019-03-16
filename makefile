@@ -1,6 +1,6 @@
 ############################# Makefile ##########################
 all: iamroot #bash
-iamroot: iamroot.o startup.o UI.o GUI.o udp_api.o root_api.o access_server.o
+iamroot: iamroot.o startup.o UI.o GUI.o udp_api.o root_api.o access_server.o stream_api.o
 	gcc -o iamroot *.o
 
 # compiling one at the time
@@ -16,10 +16,12 @@ tcp_api.o: tcp_api.c tcp_api.h
 	gcc -o tcp_api.o -c tcp_api.c -W -Wall
 root_api.o: root_api.c root_api.h udp_api.h
 	gcc -o root_api.o -c root_api.c -W -Wall -ansi -pedantic
+stream_api.o: stream_api.c stream_api.h tcp_api.h
+	gcc -o stream_api.o -c stream_api.c -W -Wall -ansi -pedantic
 access_server.o: access_server.c access_server.h udp_api.h
 	gcc -o access_server.o -c access_server.c -W -Wall -ansi -pedantic
 
-iamroot.o: iamroot.c UI.h startup.h root_api.h structs.h access_server.h
+iamroot.o: iamroot.c UI.h startup.h root_api.h structs.h access_server.h stream_api.h
 	gcc -o iamroot.o -c iamroot.c -W -Wall -ansi -pedantic
 
 # running bash script -NOT WORKING

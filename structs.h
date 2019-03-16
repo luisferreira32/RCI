@@ -3,6 +3,7 @@
 
 
 /* constants */
+#define SSBUFFSIZE 10
 #define SBUFFSIZE 100
 #define MBUFFSIZE 500
 #define BBUFFSIZE 1000
@@ -37,6 +38,7 @@ typedef struct peer_connection_s
     int accessfd;
     int fatherfd;
     int * childrenfd;
+    int nofchildren;
 }peer_conneciton;
 
 #endif

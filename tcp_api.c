@@ -7,7 +7,7 @@
 
 /************************************************************************************************/
 /**** tcp_connect ****
-INPUT - arguments, IP and port of server
+INPUT - DNS or IP and port of server
 OUTPUT - connection socket file descriptor (or -1 in case of error)
 */
 int tcp_client(char * dns, char * ip, int port)
@@ -136,7 +136,7 @@ int tcp_recv(int server_fd, void *buf, size_t count)
 
 /************************************************************************************************/
 /**** tcp_server **** for server to open business
-INPUT -  none
+INPUT -  port to open tcp access point 
 OUTPUT - socked file descriptor or error -1
 */
 int tcp_server(int port)

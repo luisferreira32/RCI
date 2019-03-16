@@ -36,6 +36,7 @@ void set_myselfdefault(peer_conneciton * myself)
     myself->accessfd = -1;
     myself->fatherfd = -1;
     myself->childrenfd = NULL;
+    myself->nofchildren = 0;
 }
 
 /* check if a text is an IP */
@@ -58,7 +59,7 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
     /* if cast with no stream ID proceed as instructed */
     if ( argc < 2 || (argv[i][0] == '-' && argv[i][1] != 'h'))
     {
-        if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci))
+        if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci->debug))
         {
             printf("[LOG] Error on running request\n");
             return -1;
