@@ -12,6 +12,8 @@ UI.o: UI.c UI.h GUI.h
 	gcc -o UI.o -c UI.c -W -Wall -ansi -pedantic
 udp_api.o: udp_api.c udp_api.h
 	gcc -o udp_api.o -c udp_api.c -W -Wall
+tcp_api.o: tcp_api.c tcp_api.h
+	gcc -o tcp_api.o -c tcp_api.c -W -Wall
 root_api.o: root_api.c root_api.h udp_api.h
 	gcc -o root_api.o -c root_api.c -W -Wall -ansi -pedantic
 access_server.o: access_server.c access_server.h udp_api.h

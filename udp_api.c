@@ -120,7 +120,7 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
     else if(ip != NULL)
     {
         peer->sin_family = AF_INET;
-        peer->sin_port = htons(59000);
+        peer->sin_port = htons(port);
         if(inet_aton(ip, &(peer->sin_addr))==0)
         {
             printf("[LOG] Invalid IP address %s", ip);
@@ -176,12 +176,14 @@ int udp_server(int port)
     if((inet_reciv = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
     {
         perror("[ERROR] Inet socket creation ");
+        freeaddrinfo(res);
         return -1;
     }
 
     if(bind(inet_reciv,res->ai_addr,res->ai_addrlen) == -1 )
     {
         perror("[ERROR] Failed bind ");
+        freeaddrinfo(res);
         return -1;
     }
 
