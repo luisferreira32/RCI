@@ -6,13 +6,14 @@
 /* functions */
 
 /* sets the default value for connection */
-void set_default(iamroot_connection * my_connect, client_interface * my_ci)
+void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer_conneciton * myself)
 {
+    strcpy(my_connect->streamID, "\0");
     strcpy(my_connect->streamname,"\0");
     strcpy(my_connect->streamip, "\0");
     my_connect->streamport = -1;
 
-    strcpy(my_connect->ipaddr, "0.0.0.0");
+    strcpy(my_connect->ipaddr, "127.0.0.1");
 
     my_connect->tport = DTCPPORT;
     my_connect->uport = DUDPPORT;
@@ -28,16 +29,15 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci)
 
     strcpy(my_ci->format, DFORMAT);
 
-}
-
-void set_myselfdefault(peer_conneciton * myself)
-{
     myself->amiroot = true;
+    myself->ipaddrtport = NULL;
     myself->accessfd = -1;
     myself->fatherfd = -1;
     myself->childrenfd = NULL;
     myself->nofchildren = 0;
+
 }
+
 
 /* check if a text is an IP */
 int is_ip(char * text)
@@ -47,14 +47,14 @@ int is_ip(char * text)
 }
 
 /* sets the connection struct according to arguments */
-int set_connection(iamroot_connection * my_connect, client_interface * my_ci, int argc, const char ** argv)
+int set_connection(iamroot_connection * my_connect, client_interface * my_ci, peer_conneciton * myself, int argc, const char ** argv)
 {
     /* declaration */
     int i = 1;
     char answer_buffer[MBUFFSIZE];
 
     /* set default */
-    set_default(my_connect, my_ci);
+    set_default(my_connect, my_ci, myself);
 
     /* if cast with no stream ID proceed as instructed */
     if ( argc < 2 || (argv[i][0] == '-' && argv[i][1] != 'h'))
@@ -64,7 +64,7 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
             printf("[LOG] Error on running request\n");
             return -1;
         }
-        if(process_answer(answer_buffer, NULL, NULL))
+        if(process_answer(answer_buffer, NULL, NULL, my_ci->debug))
         {
             printf("[LOG] Error processing answer\n");
         }
@@ -75,7 +75,12 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
     if(argv[i][0] != 45)
     {
         /* read arguments of streamid */
-        if(sscanf(argv[i], "%[^:]:%[^:]:%d", my_connect->streamname, my_connect->streamip, &my_connect->streamport) < 0)
+        if(sscanf(argv[i], "%[^:]:%[^:]:%d", my_connect->streamname, my_connect->streamip, &my_connect->streamport) == 0)
+        {
+            perror("[ERROR] Streamid reading ");
+            return -1;
+        }
+        if (sscanf(argv[i], "%s", my_connect->streamID) == 0)
         {
             perror("[ERROR] Streamid reading ");
             return -1;
@@ -109,9 +114,10 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i],"%s",my_connect->ipaddr) < 0)
+            if(sscanf(argv[i],"%s",my_connect->ipaddr) == 0)
             {
                 perror("[ERROR] Reading interface IP");
+                return -1;
             }
             /* validate */
             if(!is_ip(my_connect->ipaddr))
@@ -136,9 +142,10 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i],"%d",&my_connect->tport)<0)
+            if(sscanf(argv[i],"%d",&my_connect->tport)==0)
             {
                 perror("[ERROR] Reading port");
+                return -1;
             }
             /* small check */
             if(my_connect->tport < 1025)
@@ -163,7 +170,7 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i],"%d",&my_connect->uport)<0)
+            if(sscanf(argv[i],"%d",&my_connect->uport)==0)
             {
                 perror("[ERROR] Reading port");
             }
@@ -190,7 +197,7 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i], "%[^:]:%d", my_connect->rsaddr, &my_connect->rsport) < 0)
+            if(sscanf(argv[i], "%[^:]:%d", my_connect->rsaddr, &my_connect->rsport) == 0)
             {
                 perror("[ERROR] Root server reading ");
                 return -1;
@@ -218,7 +225,7 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i],"%d",&my_connect->tcpsessions)<0)
+            if(sscanf(argv[i],"%d",&my_connect->tcpsessions)==0)
             {
                 perror("[ERROR] Reading tcpsessions");
             }
@@ -245,7 +252,7 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i],"%d",&my_connect->bestpops)<0)
+            if(sscanf(argv[i],"%d",&my_connect->bestpops)==0)
             {
                 perror("[ERROR] Reading bestpops");
             }
@@ -272,7 +279,7 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, in
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i],"%d",&my_connect->tsecs)<0)
+            if(sscanf(argv[i],"%d",&my_connect->tsecs)==0)
             {
                 perror("[ERROR] Reading tsecs");
             }

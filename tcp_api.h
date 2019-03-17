@@ -21,8 +21,8 @@
 /* client side */
 int tcp_client(char * ,char * , int);
 /* general functions */
-int tcp_send(int , void *, size_t );
-int tcp_recv(int , void *, size_t );
+int tcp_send(int , void *, size_t, bool );
+int tcp_recv(int , void *, size_t, bool );
 void tcp_disconnect(int );
 /* server side */
 int tcp_server(int);

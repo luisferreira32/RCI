@@ -14,7 +14,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
     /* create socket for client type */
     if((socketfd = udp_create_client(NULL, my_connect->rsaddr, my_connect->rsport, &peer))< 0)
     {
-        perror("[ERROR] Failed to create socket to root ");
+        printf("[LOG] Failed to create socket to root ");
         return -1;
     }
     /* send check */
@@ -24,7 +24,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
         return -1;
     }
     /* and exit IF we're removing*/
-    if(sscanf(request,"%s ",buff)<0)
+    if(sscanf(request,"%s ",buff)==0)
     {
         perror("[ERROR] sscanf of answer failed ");
         return -1;
@@ -42,7 +42,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
     }
     if(buffer_size < strlen(buff))
     {
-        printf("[ERROR] Root answer buffer overflowed \n");
+        printf("[LOG] Root answer buffer overflowed \n");
         return -1;
     }
 
@@ -54,16 +54,17 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
 }
 
 /* takes the awnser buff and understands stuff */
-int process_answer(char * answer, iamroot_connection * my_connect, peer_conneciton * myself)
+int process_answer(char * answer, iamroot_connection * my_connect, peer_conneciton * myself, bool debug)
 {
     /*variables*/
-    char first[10];
-    char buff[BBUFFSIZE-10];
+    char first[10], buff[BBUFFSIZE-10], streamID[SBUFFSIZE], asaddr[SBUFFSIZE];
+    int asport = -1;
 
+    printf("%s\n", answer );
     /* get the keyword */
     if(sscanf(answer,"%s %s", first, buff) == 0)
     {
-        printf("[ERROR] Error reading root server reply\n");
+        perror("[ERROR] Error reading root server reply ");
     }
     /* compare with possible replies */
     if(strcmp(first,"URROOT") == 0)
@@ -72,13 +73,32 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
         myself->amiroot = true;
         if(open_access_server(my_connect->uport, myself))
         {
-            printf("[ERROR] Failed to open access server \n");
+            printf("[LOG] Failed to open access server \n");
+            return -1;
         }
     }
     else if(strcmp(first,"ROOTIS") == 0)
     {
         /* do request on access server  */
         myself->amiroot = false;
+        /* first get the access server */
+        if (sscanf(buff, "%s %[^:]:%d", streamID, asaddr, &asport)==0)
+        {
+            perror("[ERROR] Failed to get access server IP & port ");
+            return -1;
+        }
+        /* verify stuff */
+        if(strcmp(streamID, my_connect->streamID) != 0)
+        {
+            printf("[LOG] Wrong stream to connect \n");
+            return -1;
+        }
+        /* notice that streamip and streamport WILL be changed for stream point*/
+        if(pop_request(my_connect,asaddr, asport, debug ) < 0)
+        {
+            printf("[LOG] Failed to request POP on access server\n");
+        }
+
     }
     else if(strcmp(first, "STREAMS") == 0)
     {

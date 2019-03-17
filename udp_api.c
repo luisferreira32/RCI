@@ -47,7 +47,6 @@ OUTPUT - bytes sent
 int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bool debug)
 {
     int bytes_recv = 0;
-    char * msg;
     socklen_t addrlen = sizeof(struct sockaddr_in);
 
     /* recieve message */
@@ -66,9 +65,6 @@ int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bo
     {
         printf("[LOG] overflowed buffer\n" );
     }
-
-    msg = buf;
-    msg[bytes_recv] = '\0';
 
     /* debug option */
     if(debug == true)

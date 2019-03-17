@@ -14,7 +14,7 @@
 #include "access_server.h"
 
 int run_request(char * , char * , size_t , iamroot_connection *, bool );
-int process_answer(char * , iamroot_connection *, peer_conneciton *);
+int process_answer(char * , iamroot_connection *, peer_conneciton *, bool);
 
 
 #endif

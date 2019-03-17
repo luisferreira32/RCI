@@ -12,8 +12,9 @@
 /* struct definitions */
 typedef struct iamroot_connection_s
 {
+    char streamID[63];
     char streamname[54];
-    char streamip[15];
+    char streamip[16];
     int streamport;
     char ipaddr[15];
     int tport;
@@ -35,6 +36,7 @@ typedef struct client_interface_s
 typedef struct peer_connection_s
 {
     bool amiroot;
+    char * ipaddrtport;
     int accessfd;
     int fatherfd;
     int * childrenfd;

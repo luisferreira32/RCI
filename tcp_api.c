@@ -93,13 +93,20 @@ void tcp_disconnect(int server_fd)
 INPUT -  server conneciton fd, message to send, lenght of memory pointed by buff
 OUTPUT - size of memory recieved by server
 */
-int tcp_send(int server_fd, void *buf, size_t count)
+int tcp_send(int server_fd, void *buf, size_t count, bool debug)
 {
+    int bytes_sent = 0;
+
     /*send the message*/
-    if(send(server_fd, (const void *)buf, count, 0) == -1)
+    if((bytes_sent = send(server_fd, (const void *)buf, count, 0)) <0 )
     {
         perror("[LOG] Client failed to send message ");
         return -1;
+    }
+
+    if (debug == true)
+    {
+        printf("[DEBUG] TCP message of %d bytes sent\n", bytes_sent);
     }
 
     return 0;
@@ -110,7 +117,7 @@ int tcp_send(int server_fd, void *buf, size_t count)
 INPUT -  server connection fd, buffer to recieve, lenght of memory pointed by buffer
 OUTPUT - size of memory recieved
 */
-int tcp_recv(int server_fd, void *buf, size_t count)
+int tcp_recv(int server_fd, void *buf, size_t count, bool debug)
 {
     int size_recv = 0;
 
@@ -127,6 +134,12 @@ int tcp_recv(int server_fd, void *buf, size_t count)
     	printf("[LOG] Buffer overflowed \n");
     }
 
+    /* debug option */
+    if(debug == true)
+    {
+        printf("[DEBUG] TCP message with %d bytes recieved\n", size_recv);
+    }
+
     /* returns 0 if orderly closed */
     return size_recv;
 }
@@ -136,7 +149,7 @@ int tcp_recv(int server_fd, void *buf, size_t count)
 
 /************************************************************************************************/
 /**** tcp_server **** for server to open business
-INPUT -  port to open tcp access point 
+INPUT -  port to open tcp access point
 OUTPUT - socked file descriptor or error -1
 */
 int tcp_server(int port)

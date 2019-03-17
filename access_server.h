@@ -26,7 +26,8 @@
 /* root */
 int open_access_server(int, peer_conneciton *);
 int refresh_root(iamroot_connection * , bool );
+int pop_reply(iamroot_connection *, int, char *, bool);
 /* non root */
-int pop_request(char*, size_t, char*, int, bool);
+int pop_request(iamroot_connection *, char*, int, bool);
 
 #endif

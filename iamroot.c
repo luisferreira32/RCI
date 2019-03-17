@@ -27,8 +27,7 @@ int main(int argc, char const *argv[])
     fd_set rfds;
 
     /* first set the strcut to it's values */
-    set_myselfdefault(&myself);
-    if(set_connection(&my_connect, &my_ci, argc, argv))
+    if(set_connection(&my_connect, &my_ci, &myself, argc, argv))
     {
         printf("[LOG] Application will terminate\n");
         return -1;
@@ -44,12 +43,12 @@ int main(int argc, char const *argv[])
     /* based on request to root server */
     if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
     {
-        printf("[ERROR] Running request failed\n");
+        printf("[LOG] Running request failed\n");
         return -1;
     }
-    if(process_answer(answer_buffer, &my_connect, &myself))
+    if(process_answer(answer_buffer, &my_connect, &myself, my_ci.debug))
     {
-        printf("[ERROR] Processing answer failed\n");
+        printf("[LOG] Processing answer failed\n");
         return -1;
     }
 
@@ -64,6 +63,7 @@ int main(int argc, char const *argv[])
             root_timer.tv_usec = 0;
             root_timer.tv_sec = my_connect.tsecs;
             timerp = &root_timer;
+            FD_SET(myself.accessfd, &rfds);
         }
         else
         {
@@ -98,6 +98,14 @@ int main(int argc, char const *argv[])
                     break;
                 }
                 quit = read_command(request_buffer, &my_connect, &my_ci);
+            }
+
+            /* read access fd if root*/
+            if(myself.amiroot == true && FD_ISSET(myself.accessfd, &rfds))
+            {
+                /* POPs are set on TCP connections while being added to the tree
+                this function can fail and mantain the good functioning of the stream */
+                pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport, my_ci.debug);
             }
 
             /* run through all POSSIBLE file descriptors that are selected*/

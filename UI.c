@@ -18,7 +18,7 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
         {
             printf("[ERROR] Error on running dump request\n");
         }
-        if(process_answer(answer_buffer, NULL, NULL))
+        if(process_answer(answer_buffer, NULL, NULL, my_ci->debug))
         {
             printf("[ERROR] Error processing dump answer\n");
         }
