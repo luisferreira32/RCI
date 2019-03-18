@@ -102,13 +102,13 @@ int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool
     /* create socket for client type */
     if((socketfd = udp_create_client(NULL, asaddr, asport, &peer))< 0)
     {
-        perror("[ERROR] Failed to create socket to access server ");
+        printf("[LOG] Failed to create socket to access server\n");
         return -1;
     }
     /* send check */
     if(udp_send(socketfd, request, strlen(request), &peer,debug) < 0)
     {
-        perror("[ERROR] Failed to send request to root ");
+        printf("[LOG] Failed to send request to root\n");
         udp_destroy(socketfd);
         return -1;
     }
@@ -116,7 +116,7 @@ int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool
     /* recieve check */
     if(udp_recv(socketfd, answer_buffer, MBUFFSIZE, &peer, debug) < 0 )
     {
-        perror("[ERROR] Failed to recv answer from access server");
+        printf("[LOG] Failed to recv answer from access server\n");
         udp_destroy(socketfd);
         return -1;
     }

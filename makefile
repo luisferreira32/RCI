@@ -1,6 +1,6 @@
 ############################# Makefile ##########################
 all: iamroot #bash
-iamroot: iamroot.o startup.o UI.o GUI.o udp_api.o root_api.o access_server.o stream_api.o
+iamroot: iamroot.o startup.o UI.o GUI.o udp_api.o tcp_api.o root_api.o access_server.o stream_api.o
 	gcc -o iamroot *.o
 
 # compiling one at the time

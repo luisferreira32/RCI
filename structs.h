@@ -39,6 +39,7 @@ typedef struct peer_connection_s
     char * ipaddrtport;
     int accessfd;
     int fatherfd;
+    int recvfd;
     int * childrenfd;
     int nofchildren;
 }peer_conneciton;

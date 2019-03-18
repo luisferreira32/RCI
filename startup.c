@@ -32,6 +32,7 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer
     myself->amiroot = true;
     myself->ipaddrtport = NULL;
     myself->accessfd = -1;
+    myself->recvfd = -1;
     myself->fatherfd = -1;
     myself->childrenfd = NULL;
     myself->nofchildren = 0;

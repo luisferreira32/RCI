@@ -12,6 +12,7 @@
 #include "structs.h"
 #include "udp_api.h"
 #include "access_server.h"
+#include "stream_api.h"
 
 int run_request(char * , char * , size_t , iamroot_connection *, bool );
 int process_answer(char * , iamroot_connection *, peer_conneciton *, bool);

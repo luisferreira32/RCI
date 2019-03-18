@@ -21,5 +21,7 @@
 #include "structs.h"
 
 /* functions definitions */
+int connect_stream(char *, int);
+int stream_recv(peer_conneciton*, client_interface *);
 
 #endif

@@ -119,7 +119,7 @@ int udp_create_client(char * dns, char * ip, int port, struct sockaddr_in * peer
         peer->sin_port = htons(port);
         if(inet_aton(ip, &(peer->sin_addr))==0)
         {
-            printf("[LOG] Invalid IP address %s", ip);
+            printf("[LOG] Invalid IP address %s\n", ip);
             return -1;
         }
     }

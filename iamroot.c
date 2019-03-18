@@ -18,7 +18,7 @@ int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE];
-    int quit = 0, selected = 0;
+    int quit = 0, connected = 0, selected = 0, nfds = 0;
     struct timeval root_timer, *timerp = NULL;
     /* main variables */
     iamroot_connection my_connect;
@@ -30,32 +30,40 @@ int main(int argc, char const *argv[])
     if(set_connection(&my_connect, &my_ci, &myself, argc, argv))
     {
         printf("[LOG] Application will terminate\n");
-        return -1;
+        quit = 1;
     }
     FD_ZERO(&rfds);
 
-    /* connect to stream since there is a stream ID */
-    if(sprintf(request_buffer,"WHOISROOT %s:%s:%d %s:%d\n", my_connect.streamname, my_connect.streamip, my_connect.streamport, my_connect.ipaddr, my_connect.uport)<0)
-    {
-        perror("[ERROR] Formulating stream request failed ");
-        return -1;
-    }
-    /* based on request to root server */
-    if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
-    {
-        printf("[LOG] Running request failed\n");
-        return -1;
-    }
-    if(process_answer(answer_buffer, &my_connect, &myself, my_ci.debug))
-    {
-        printf("[LOG] Processing answer failed\n");
-        return -1;
-    }
+    /* allocate memory accordingly */
+    myself.childrenfd = (int *)malloc(sizeof(int)*my_connect.tcpsessions);
 
     /* MAIN LOOP USING SELECT WITH TIMER TO REFRESH */
-    render_header();
     while (quit == 0)
     {
+        /* connects IF not already connected */
+        if(connected == 0)
+        {
+            printf("[LOG] Connecting to a stream ...\n");
+            /* connect to stream since there is a stream ID */
+            if(sprintf(request_buffer,"WHOISROOT %s:%s:%d %s:%d\n", my_connect.streamname, my_connect.streamip, my_connect.streamport, my_connect.ipaddr, my_connect.uport)<0)
+            {
+                perror("[ERROR] Formulating stream request failed ");
+                quit = 1;break;
+            }
+            /* based on request to root server */
+            if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
+            {
+                printf("[LOG] Running request failed\n");
+                quit = 1;break;
+            }
+            if(process_answer(answer_buffer, &my_connect, &myself, my_ci.debug))
+            {
+                printf("[LOG] Processing answer failed\n");
+                quit = 1;break;
+            }
+            connected = 1;
+            render_header();
+        }
         /* reset every loop */
         /* root specific -> timer & access server */
         if(myself.amiroot == true)
@@ -63,17 +71,18 @@ int main(int argc, char const *argv[])
             root_timer.tv_usec = 0;
             root_timer.tv_sec = my_connect.tsecs;
             timerp = &root_timer;
-            FD_SET(myself.accessfd, &rfds);
+            FD_SET(myself.accessfd, &rfds);nfds++;
         }
         else
         {
             timerp = NULL;
         }
         /* all other file descritors*/
-        FD_SET(STDIN, &rfds);
+        FD_SET(STDIN, &rfds);nfds++;
+        FD_SET(myself.fatherfd, &rfds);nfds++;
 
         /* NUMBER OF FD IS myself.nofchildren + 1 (father) + 1(stdin) + 1(access) !!!!*/
-        if((selected = select(1,&rfds, NULL, NULL, timerp))< 0)
+        if((selected = select(nfds,&rfds, NULL, NULL, timerp))< 0)
         {
             perror("[ERROR] Select failed ");
             break;
@@ -108,12 +117,16 @@ int main(int argc, char const *argv[])
                 pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport, my_ci.debug);
             }
 
+            /* read the stream and propagate to children */
+            if (FD_ISSET(myself.fatherfd,&rfds))
+            {
+                /* if size recieved is 0 it's a closing statement, reconnect */
+                connected = stream_recv(&myself, &my_ci);
+            }
             /* run through all POSSIBLE file descriptors that are selected*/
         }
     }
     /* use SELECT*/
-    /* if STDIN has on buffer, FGETS */
-    /* if UDP i'm root so do peer connection */
     /* if TCP recieve and propagate & print if display is on*/
     /* when timed out send the focking message to ROOT and re-start*/
 
@@ -139,6 +152,9 @@ int main(int argc, char const *argv[])
     }
 
     /* warn peers of disconnecting .. !*/
+
+    /* free any alocated memory */
+    free(myself.childrenfd);
 
     return 0;
 }

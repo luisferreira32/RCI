@@ -60,9 +60,8 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
     char first[10], buff[BBUFFSIZE-10], streamID[SBUFFSIZE], asaddr[SBUFFSIZE];
     int asport = -1;
 
-    printf("%s\n", answer );
     /* get the keyword */
-    if(sscanf(answer,"%s %s", first, buff) == 0)
+    if(sscanf(answer,"%s %[^\n]", first, buff) == 0)
     {
         perror("[ERROR] Error reading root server reply ");
     }
@@ -76,6 +75,12 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
             printf("[LOG] Failed to open access server \n");
             return -1;
         }
+        /* connect to stream */
+        if ((myself->fatherfd = connect_stream(my_connect->streamip, my_connect->streamport)) <0)
+        {
+            printf("[LOG] Failed to connect to stream source\n");
+            return -1;
+        }
     }
     else if(strcmp(first,"ROOTIS") == 0)
     {
@@ -87,6 +92,7 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
             perror("[ERROR] Failed to get access server IP & port ");
             return -1;
         }
+
         /* verify stuff */
         if(strcmp(streamID, my_connect->streamID) != 0)
         {
@@ -97,6 +103,7 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
         if(pop_request(my_connect,asaddr, asport, debug ) < 0)
         {
             printf("[LOG] Failed to request POP on access server\n");
+            return -1;
         }
 
     }
