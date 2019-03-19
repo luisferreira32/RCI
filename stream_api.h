@@ -6,13 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
 #include <errno.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <unistd.h>
 #include <time.h>
 
@@ -21,6 +15,7 @@
 #include "structs.h"
 
 /* functions definitions */
+int recieve_listeners(int );
 int connect_stream(char *, int);
 int stream_recv(peer_conneciton*, client_interface *);
 

@@ -11,6 +11,7 @@
 #include "GUI.h"
 #include "root_api.h"
 #include "structs.h"
+#include "stream_api.h"
 
 /* our main */
 
@@ -18,7 +19,7 @@ int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE];
-    int quit = 0, connected = 0, selected = 0, nfds = 0;
+    int quit = 0, connected = 0, selected = 0, nfds = 0, i = 0;
     struct timeval root_timer, *timerp = NULL;
     /* main variables */
     iamroot_connection my_connect;
@@ -29,13 +30,17 @@ int main(int argc, char const *argv[])
     /* first set the strcut to it's values */
     if(set_connection(&my_connect, &my_ci, &myself, argc, argv))
     {
-        printf("[LOG] Application will terminate\n");
+        printf("[LOG] Failed the start up\n");
         quit = 1;
     }
-    FD_ZERO(&rfds);
 
-    /* allocate memory accordingly */
+    /* allocate memory accordingly and open service to recieve children*/
     myself.childrenfd = (int *)malloc(sizeof(int)*my_connect.tcpsessions);
+    if(quit == 0 && (myself.recvfd = recieve_listeners(my_connect.tport))<0)
+    {
+        printf("[LOG] Failed to open tcp socket \n");
+        quit = 1;
+    }
 
     /* MAIN LOOP USING SELECT WITH TIMER TO REFRESH */
     while (quit == 0)
@@ -50,7 +55,7 @@ int main(int argc, char const *argv[])
                 perror("[ERROR] Formulating stream request failed ");
                 quit = 1;break;
             }
-            /* based on request to root server */
+            /* based on request to root server connect to stream OR peer */
             if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
             {
                 printf("[LOG] Running request failed\n");
@@ -61,10 +66,12 @@ int main(int argc, char const *argv[])
                 printf("[LOG] Processing answer failed\n");
                 quit = 1;break;
             }
+            /* it's operational go for it!*/
             connected = 1;
             render_header();
         }
         /* reset every loop */
+        FD_ZERO(&rfds);nfds = 2;
         /* root specific -> timer & access server */
         if(myself.amiroot == true)
         {
@@ -80,6 +87,11 @@ int main(int argc, char const *argv[])
         /* all other file descritors*/
         FD_SET(STDIN, &rfds);nfds++;
         FD_SET(myself.fatherfd, &rfds);nfds++;
+        FD_SET(myself.recvfd, &rfds);nfds++;
+        for (i = 0; i < myself.nofchildren; i++)
+        {
+            FD_SET(myself.childrenfd[i], &rfds); nfds++;
+        }
 
         /* NUMBER OF FD IS myself.nofchildren + 1 (father) + 1(stdin) + 1(access) !!!!*/
         if((selected = select(nfds,&rfds, NULL, NULL, timerp))< 0)
@@ -123,12 +135,23 @@ int main(int argc, char const *argv[])
                 /* if size recieved is 0 it's a closing statement, reconnect */
                 connected = stream_recv(&myself, &my_ci);
             }
+
+            /* check if it's a peer trying to join the tree */
+            if (FD_ISSET(myself.recvfd, &rfds))
+            {
+                /* accept it and send a message of welcome or redirect */
+            }
+
             /* run through all POSSIBLE file descriptors that are selected*/
+            for (i = 0; i < myself.nofchildren; i++)
+            {
+                if (FD_ISSET(myself.childrenfd[i], &rfds))
+                {
+                    /* check the upstream message  */
+                }
+            }
         }
     }
-    /* use SELECT*/
-    /* if TCP recieve and propagate & print if display is on*/
-    /* when timed out send the focking message to ROOT and re-start*/
 
     /* disconnecting procedures */
     if(myself.amiroot == true)
@@ -152,6 +175,18 @@ int main(int argc, char const *argv[])
     }
 
     /* warn peers of disconnecting .. !*/
+
+    /* close all open tcps */
+    if (myself.accessfd != -1 && myself.fatherfd != -1 && myself.recvfd != -1)
+    {
+        tcp_disconnect(myself.accessfd);
+        tcp_disconnect(myself.fatherfd);
+        tcp_disconnect(myself.recvfd);
+        for ( i = 0; i < myself.nofchildren; i++)
+        {
+            tcp_disconnect(myself.childrenfd[i]);
+        }
+    }
 
     /* free any alocated memory */
     free(myself.childrenfd);

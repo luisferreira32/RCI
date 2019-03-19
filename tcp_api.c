@@ -100,7 +100,7 @@ int tcp_send(int server_fd, void *buf, size_t count, bool debug)
     /*send the message*/
     if((bytes_sent = send(server_fd, (const void *)buf, count, 0)) <0 )
     {
-        perror("[LOG] Client failed to send message ");
+        perror("[ERROR] Client failed to send message ");
         return -1;
     }
 
@@ -160,12 +160,12 @@ int tcp_server(int port)
 
     memset(&hints,0,sizeof(hints));
     hints.ai_family=AF_INET;
-    hints.ai_socktype=SOCK_DGRAM;
-    hints.ai_flags=AI_NUMERICSERV;
+    hints.ai_socktype=SOCK_STREAM;
+    hints.ai_flags=AI_PASSIVE|AI_NUMERICSERV;
 
     if(sprintf(port_buffer, "%d", port) <0)
     {
-        perror("[ERROR] Getting udp port ");
+        perror("[ERROR] Getting tcp port ");
         return -1;
     }
     port_buffer[9] = '\0';
@@ -176,14 +176,14 @@ int tcp_server(int port)
         return -1;
     }
 
-    if((connect_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol))==-1)
+    if((connect_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol))<0)
     {
         perror("[ERROR] Inet socket creation ");
         freeaddrinfo(res);
         return -1;
     }
 
-    if(bind(connect_socket,res->ai_addr, res->ai_protocol)<0)
+    if(bind(connect_socket,res->ai_addr, res->ai_addrlen)<0)
     {
         perror("[ERROR] Inet socket bind ");
         freeaddrinfo(res);
