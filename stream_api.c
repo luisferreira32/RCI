@@ -27,7 +27,7 @@ int connect_stream(char * streamip, int streamport)
 }
 
 /* read stream and propagate */
-int stream_recv(peer_conneciton* myself, client_interface * my_ci)
+int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci)
 {
     /* variables */
     char recv_msg[SBUFFSIZE], header[SSBUFFSIZE];

@@ -34,20 +34,24 @@ int main(int argc, char const *argv[])
         quit = 1;
     }
 
-    /* allocate memory accordingly and open service to recieve children*/
-    myself.childrenfd = (int *)malloc(sizeof(int)*my_connect.tcpsessions);
-    if(quit == 0 && (myself.recvfd = recieve_listeners(my_connect.tport))<0)
+    /* initial procedures */
+    if (quit == 0)
     {
-        printf("[LOG] Failed to open tcp socket \n");
-        quit = 1;
-    }
-    /* allocate for POPs and set them default*/
-    if (quit == 0 && myself.amiroot == true)
-    {
-        myself.ipaddrtport = (char **)malloc(sizeof(char *)*my_connect.bestpops);
-        for (i = 0; i < my_connect.bestpops; i++)
+        /* allocate memory accordingly and open service to recieve children*/
+        myself.childrenfd = (int *)malloc(sizeof(int)*my_connect.tcpsessions);
+        if((myself.recvfd = recieve_listeners(my_connect.tport))<0)
         {
-            myself.ipaddrtport[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
+            printf("[LOG] Failed to open tcp socket \n");
+            quit = 1;
+        }
+        /* allocate for POPs and set them default*/
+        if (myself.amiroot == true)
+        {
+            myself.ipaddrtport = (char **)malloc(sizeof(char *)*my_connect.bestpops);
+            for (i = 0; i < my_connect.bestpops; i++)
+            {
+                myself.ipaddrtport[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
+            }
         }
     }
 
@@ -59,7 +63,7 @@ int main(int argc, char const *argv[])
         {
             printf("[LOG] Connecting to a stream ...\n");
             /* connect to stream since there is a stream ID */
-            if(sprintf(request_buffer,"WHOISROOT %s:%s:%d %s:%d\n", my_connect.streamname, my_connect.streamip, my_connect.streamport, my_connect.ipaddr, my_connect.uport)<0)
+            if(sprintf(request_buffer,"WHOISROOT %s %s:%d\n", my_connect.streamID, my_connect.ipaddr, my_connect.uport)<0)
             {
                 perror("[ERROR] Formulating stream request failed ");
                 quit = 1;break;
@@ -136,7 +140,7 @@ int main(int argc, char const *argv[])
                 /* check if I have pops, otherwise request for pops */
                 if (my_connect.tcpsessions > myself.nofchildren)
                 {
-                    if(sprintf(myself.ipaddrtport[i], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
+                    if(sprintf(myself.ipaddrtport[0], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
                     {
                         perror("[ERROR] Setting own POPs ");
                     }
@@ -150,7 +154,7 @@ int main(int argc, char const *argv[])
                 /* shift pops */
                 for (i = 0; i < my_connect.bestpops-1; i++)
                 {
-                    myself.ipaddrtport[i] = myself.ipaddrtport[i+1];
+                    strcpy(myself.ipaddrtport[i],myself.ipaddrtport[i+1]);
                 }
             }
 
@@ -158,7 +162,7 @@ int main(int argc, char const *argv[])
             if (FD_ISSET(myself.fatherfd,&rfds))
             {
                 /* if size recieved is 0 it's a closing statement, reconnect */
-                connected = stream_recv(&myself, &my_ci);
+                connected = stream_recv_downstream(&myself, &my_ci);
             }
 
             /* check if it's a peer trying to join the tree */
@@ -184,13 +188,18 @@ int main(int argc, char const *argv[])
                 if (FD_ISSET(myself.childrenfd[i], &rfds))
                 {
                     /* check the upstream message if it's 0 - disconnect child */
+                    /*if (stream_recv_upstream()==0)
+                    {
+
+                    }*/
+                    /* else go on! */
                 }
             }
         }
     }
 
     /* disconnecting procedures */
-    if(myself.amiroot == true)
+    if(connected == 1 && myself.amiroot == true)
     {
         /* take stream root off root server */
         if(sprintf(request_buffer,"REMOVE %s:%s:%d\n", my_connect.streamname, my_connect.streamip, my_connect.streamport)<0)
@@ -214,19 +223,12 @@ int main(int argc, char const *argv[])
         printf("[LOG] Good bye father...\n");
     }
 
-    /* warn peers of disconnecting .. !*/
 
     /* close all open tcps */
-    if (myself.accessfd != -1 && myself.fatherfd != -1 && myself.recvfd != -1)
-    {
-        tcp_disconnect(myself.accessfd);
-        tcp_disconnect(myself.fatherfd);
-        tcp_disconnect(myself.recvfd);
-        for ( i = 0; i < myself.nofchildren; i++)
-        {
-            tcp_disconnect(myself.childrenfd[i]);
-        }
-    }
+    if (myself.accessfd != -1)tcp_disconnect(myself.accessfd);
+    if(myself.fatherfd != -1)tcp_disconnect(myself.fatherfd);
+    if(myself.recvfd != -1)tcp_disconnect(myself.recvfd);
+    for ( i = 0; i < myself.nofchildren; i++)tcp_disconnect(myself.childrenfd[i]);
 
     /* free any alocated memory */
     free(myself.childrenfd);
