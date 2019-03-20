@@ -5,27 +5,38 @@
 
 /* functions */
 
+/* transforms a string in lowercase letters */
+void string_lowercase(char * string)
+{
+    int i = 0;
+    for (i = 0; i < (int)strlen(string); i++)
+    {
+        string[i] = (string[i] <= 'Z' && string[i] >= 'A') ? string[i] + 32 : string[i];
+    }
+}
+
 /* interprets the user commands */
 int read_command(char * command_buffer, iamroot_connection * my_connect, client_interface * my_ci)
 {
     /*variables*/
     char answer_buffer[MBUFFSIZE];
 
+    string_lowercase(command_buffer);
     /* command intrepertation */
     if(strcmp(command_buffer, "streams\n") == 0)
     {
         if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci->debug))
         {
-            printf("[ERROR] Error on running dump request\n");
+            printf("[LOG] Error on running dump request\n");
         }
         if(process_answer(answer_buffer, NULL, NULL, my_ci->debug))
         {
-            printf("[ERROR] Error processing dump answer\n");
+            printf("[LOG] Error processing dump answer\n");
         }
     }
     else if(strcmp(command_buffer, "status\n") == 0)
     {
-
+        printf("%s\n", my_connect->streamID);
     }
     else if(strcmp(command_buffer, "display on\n") == 0)
     {
@@ -59,14 +70,16 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     {
         return 1;
     }
-    else if(strcmp(command_buffer, "HELP\n") == 0)
+    else if(strcmp(command_buffer, "help\n") == 0)
     {
         render_help();
     }
     else
     {
-
+        printf("Invalid command, write HELP if needed.\n");
+        return 0;
     }
+    printf("[LOG] Command processed \n");
 
     return 0;
 }

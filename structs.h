@@ -8,6 +8,7 @@
 #define MBUFFSIZE 500
 #define BBUFFSIZE 1000
 #define STDIN 0
+#define POPBEGIN 10
 
 /* struct definitions */
 typedef struct iamroot_connection_s
@@ -36,7 +37,7 @@ typedef struct client_interface_s
 typedef struct peer_connection_s
 {
     bool amiroot;
-    char * ipaddrtport;
+    char ** ipaddrtport;
     int accessfd;
     int fatherfd;
     int recvfd;

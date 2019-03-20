@@ -16,6 +16,7 @@
 
 /* functions definitions */
 int recieve_listeners(int );
+int accept_children(int );
 int connect_stream(char *, int);
 int stream_recv(peer_conneciton*, client_interface *);
 

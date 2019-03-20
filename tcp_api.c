@@ -208,19 +208,24 @@ OUTPUT - new socket file descriptor for client communicaiton
 */
 int tcp_accept(int server_fd, struct sockaddr_in * client_addr)
 {
-    socklen_t client_addr_size;
+    socklen_t client_addr_size, *pointer = NULL;
     int client_fd = -1;
 
     /*accept incoming connecion and save client address*/
-    client_addr_size = sizeof(struct sockaddr_in);
-    if((client_fd=accept(server_fd, (struct sockaddr *)client_addr, &client_addr_size))<0)
+    if(client_addr!=NULL)
+    {
+        client_addr_size = sizeof(struct sockaddr_in);
+        pointer = &client_addr_size;
+    }
+
+    if((client_fd=accept(server_fd, (struct sockaddr *)client_addr, pointer))<0)
     {
         perror("[ERROR] Failed to accept connection ");
         return -1;
     }
 
     /*check if address is complete*/
-    if(client_addr_size != sizeof(struct sockaddr_in))
+    if(pointer != NULL && client_addr_size != sizeof(struct sockaddr_in))
     {
         printf("[LOG] Unexpected client address \n");
     }

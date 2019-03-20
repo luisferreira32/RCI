@@ -14,6 +14,12 @@ int recieve_listeners(int accessport)
     return tcp_server(accessport);
 }
 
+/* create a fd for a child */
+int accept_children(int recvfd)
+{
+    return tcp_accept(recvfd, NULL);
+}
+
 /* connect to stream and return its file descritor*/
 int connect_stream(char * streamip, int streamport)
 {
@@ -23,7 +29,9 @@ int connect_stream(char * streamip, int streamport)
 /* read stream and propagate */
 int stream_recv(peer_conneciton* myself, client_interface * my_ci)
 {
+    /* variables */
     char recv_msg[SBUFFSIZE], header[SSBUFFSIZE];
+    /*char *data, data_size[5];*/
     int size_recv = 0, i = 0;
 
     /* clear buffer */

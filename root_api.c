@@ -43,7 +43,6 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
     if(buffer_size < strlen(buff))
     {
         printf("[LOG] Root answer buffer overflowed \n");
-        return -1;
     }
 
     /* save the answer */
@@ -103,6 +102,13 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
         if(pop_request(my_connect,asaddr, asport, debug ) < 0)
         {
             printf("[LOG] Failed to request POP on access server\n");
+            return -1;
+        }
+
+        /* connect to peer as stream source */        
+        if ((myself->fatherfd = connect_stream(my_connect->streamip, my_connect->streamport)) <0)
+        {
+            printf("[LOG] Failed to connect to stream source\n");
             return -1;
         }
 
