@@ -50,6 +50,7 @@ int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bo
     socklen_t addrlen = sizeof(struct sockaddr_in);
 
     /* recieve message */
+    memset(buf, 0, count);
     if((bytes_recv= recvfrom(socket_fd, buf, count, 0, (struct sockaddr *)peer, &addrlen))<0)
     {
         perror("[ERROR] recv udp ");

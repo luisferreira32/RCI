@@ -38,6 +38,7 @@ typedef struct peer_connection_s
 {
     bool amiroot;
     char ** ipaddrtport;
+    int popcounter;
     int accessfd;
     int fatherfd;
     int recvfd;

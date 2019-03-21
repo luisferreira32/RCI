@@ -46,6 +46,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
     }
 
     /* save the answer */
+    memset(answer_buffer, 0, buffer_size);
     strcpy(answer_buffer, buff);
     udp_destroy(socketfd);
 
@@ -105,7 +106,7 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
             return -1;
         }
 
-        /* connect to peer as stream source */        
+        /* connect to peer as stream source */
         if ((myself->fatherfd = connect_stream(my_connect->streamip, my_connect->streamport)) <0)
         {
             printf("[LOG] Failed to connect to stream source\n");

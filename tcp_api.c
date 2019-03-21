@@ -122,6 +122,7 @@ int tcp_recv(int server_fd, void *buf, size_t count, bool debug)
     int size_recv = 0;
 
     /*count the number of bytes copied*/
+    memset(buf, 0, count);
     if((size_recv = recv(server_fd, buf, count,0)) < 0)
     {
         perror("[ERROR] Client failed to recv size of message ");

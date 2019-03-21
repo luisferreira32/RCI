@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE];
-    int quit = 0, connected = 0, selected = 0, nfds = 0, i = 0;
+    int quit = 0, connected = 0, selected = 0, nfds = 0, i = 0, j = 0;
     struct timeval root_timer, *timerp = NULL;
     /* main variables */
     iamroot_connection my_connect;
@@ -31,7 +31,7 @@ int main(int argc, char const *argv[])
     if(set_connection(&my_connect, &my_ci, &myself, argc, argv))
     {
         printf("[LOG] Failed the start up\n");
-        quit = 1;
+        return 0;
     }
 
     /* initial procedures */
@@ -74,6 +74,7 @@ int main(int argc, char const *argv[])
                 printf("[LOG] Running request failed\n");
                 quit = 1;break;
             }
+
             if(process_answer(answer_buffer, &my_connect, &myself, my_ci.debug))
             {
                 printf("[LOG] Processing answer failed\n");
@@ -83,6 +84,7 @@ int main(int argc, char const *argv[])
             connected = 1;
             render_header();
         }
+
         /* reset every loop */
         FD_ZERO(&rfds);nfds = 2;
         /* root specific -> timer & access server */
@@ -106,7 +108,25 @@ int main(int argc, char const *argv[])
             FD_SET(myself.childrenfd[i], &rfds); nfds++;
         }
 
-        /* NUMBER OF FD IS myself.nofchildren + 1 (father) + 1(stdin) + 1(access) !!!!*/
+        /* ask N best pops if ROOT */
+        if (myself.amiroot == true && myself.popcounter < my_connect.bestpops)
+        {
+            /* check if I have pop, otherwise request for pops */
+            if (my_connect.tcpsessions > myself.nofchildren)
+            {
+                if(sprintf(myself.ipaddrtport[myself.popcounter], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
+                {
+                    perror("[ERROR] Setting owned POPs ");
+                }
+                myself.popcounter++;
+            }
+            else
+            {
+                /* ASK FOR POPS */
+            }
+        }
+
+        /* OUR IMPORTANT SELECT TO CHECK INPUTS */
         if((selected = select(nfds,&rfds, NULL, NULL, timerp))< 0)
         {
             perror("[ERROR] Select failed ");
@@ -137,49 +157,62 @@ int main(int argc, char const *argv[])
             /* read access fd if root*/
             if(myself.amiroot == true && FD_ISSET(myself.accessfd, &rfds))
             {
-                /* check if I have pops, otherwise request for pops */
-                if (my_connect.tcpsessions > myself.nofchildren)
+                myself.popcounter--;
+                if (myself.popcounter < 0)
                 {
-                    if(sprintf(myself.ipaddrtport[0], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
-                    {
-                        perror("[ERROR] Setting own POPs ");
-                    }
-                }
-                else
-                {
-                    /* ASK FOR POPS */
+                    printf("[LOG] Unexpected lack of POPs \n");
+                    myself.popcounter = 0;
                 }
                 /* reply the access server request */
-                pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[0], my_ci.debug);
-                /* shift pops */
-                for (i = 0; i < my_connect.bestpops-1; i++)
-                {
-                    strcpy(myself.ipaddrtport[i],myself.ipaddrtport[i+1]);
-                }
+                pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[myself.popcounter], my_ci.debug);
             }
 
             /* read the stream and propagate to children */
             if (FD_ISSET(myself.fatherfd,&rfds))
             {
                 /* if size recieved is 0 it's a closing statement, reconnect */
-                connected = stream_recv_downstream(&myself, &my_ci);
+                connected = stream_recv_downstream(&myself, &my_ci, &my_connect);
             }
 
             /* check if it's a peer trying to join the tree */
             if (FD_ISSET(myself.recvfd, &rfds))
             {
                 /* accept it and send a message of welcome or redirect */
-                /* accept to a new fd*/
-                if ((myself.childrenfd[myself.nofchildren] = accept_children(myself.recvfd)) < 0)
+                if (myself.nofchildren < my_connect.tcpsessions)
                 {
-                    printf("[LOG] Error accepting children \n");
+                    /* accept to a new fd */
+                    if ((myself.childrenfd[myself.nofchildren] = accept_children(myself.recvfd)) < 0)
+                    {
+                        printf("[LOG] Error accepting children \n");
+                    }
+                    else
+                    {
+                        /* and send WElcome*/
+                        if (stream_welcome(&my_connect, &myself, my_ci.debug))
+                        {
+                            printf("[LOG] Failed to welcome child\n");
+                            tcp_disconnect(myself.childrenfd[myself.nofchildren]);
+                            myself.nofchildren--;
+                        }
+                        myself.nofchildren++;
+                    }
                 }
+                /* else connect, redirect and disconnect */
                 else
                 {
-                    /* add a child to speak */
-                    myself.nofchildren++;
-                    /* and send WElcome or REdirect*/
+                    if ((i = accept_children(myself.recvfd)) < 0)
+                    {
+                        printf("[LOG] Error accepting children \n");
+                    }
+                    myself.popcounter--;
+                    if (myself.popcounter < 0 || stream_redirect(i, myself.ipaddrtport[myself.popcounter], my_ci.debug))
+                    {
+                        myself.popcounter = 0;
+                        printf("[LOG] Failed to redirect temp child \n");
+                    }
+                    tcp_disconnect(i);
                 }
+
             }
 
             /* run through all POSSIBLE file descriptors that are selected*/
@@ -188,10 +221,15 @@ int main(int argc, char const *argv[])
                 if (FD_ISSET(myself.childrenfd[i], &rfds))
                 {
                     /* check the upstream message if it's 0 - disconnect child */
-                    /*if (stream_recv_upstream()==0)
+                    if (stream_recv_upstream(myself.childrenfd[i], &myself, &my_connect, my_ci.debug)==0)
                     {
-
-                    }*/
+                        tcp_disconnect(myself.childrenfd[i]);
+                        for (j = i; j < myself.nofchildren-1; j++)
+                        {
+                            myself.childrenfd[i] = myself.childrenfd[i+1];
+                        }
+                        myself.nofchildren--;
+                    }
                     /* else go on! */
                 }
             }
@@ -199,7 +237,7 @@ int main(int argc, char const *argv[])
     }
 
     /* disconnecting procedures */
-    if(connected == 1 && myself.amiroot == true)
+    if(myself.amiroot == true)
     {
         /* take stream root off root server */
         if(sprintf(request_buffer,"REMOVE %s:%s:%d\n", my_connect.streamname, my_connect.streamip, my_connect.streamport)<0)
@@ -209,7 +247,7 @@ int main(int argc, char const *argv[])
         /* run request */
         if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
         {
-            printf("[ERROR] Error on running remove request\n");
+            printf("[LOG] Error on running remove request\n");
         }
         /* de allocate root specific memory */
         for (i = 0; i < my_connect.bestpops; i++)

@@ -57,6 +57,7 @@ int pop_reply(iamroot_connection * my_connect, int accessfd, char * ipaddrtport,
     struct sockaddr_in peer;
 
     /* recieve check */
+    memset(request, 0, SSBUFFSIZE);
     if(udp_recv(accessfd, request, SSBUFFSIZE, &peer, debug) < 0 )
     {
         printf("[LOG] Failed to recv request on access server");
@@ -94,6 +95,7 @@ int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool
     struct sockaddr_in peer;
 
     /* create message */
+    memset(request,0,SSBUFFSIZE);
     if (sprintf(request, "POPREQ\n")<0)
     {
         perror("[ERROR] Formulating request ");

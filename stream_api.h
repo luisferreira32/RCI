@@ -18,6 +18,9 @@
 int recieve_listeners(int );
 int accept_children(int );
 int connect_stream(char *, int);
-int stream_recv_downstream(peer_conneciton*, client_interface *);
+int stream_recv_downstream(peer_conneciton*, client_interface *, iamroot_connection *);
+int stream_recv_upstream(int, peer_conneciton* , iamroot_connection * , bool);
+int stream_welcome(iamroot_connection * , peer_conneciton * , bool );
+int stream_redirect(int, char *, bool);
 
 #endif
