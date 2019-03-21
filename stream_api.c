@@ -161,8 +161,7 @@ int stream_recv_upstream(int childfd, peer_conneciton* myself, iamroot_connectio
     /* if it's a new pop and im root, i must save it*/
     if (strcmp(header, "NP")==0 && myself->amiroot == true)
     {
-        printf("%s %d\n",recv_msg, myself->popcounter );
-        if (myself->popcounter < my_connect->bestpops || sscanf(recv_msg, "%s %s", header, myself->ipaddrtport[myself->popcounter])!=2)
+        if (myself->popcounter > my_connect->bestpops || sscanf(recv_msg, "%s %s\n", header, myself->ipaddrtport[myself->popcounter])!=2)
         {
             printf("[LOG] Did not add NP\n" );
         }

@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE];
-    int quit = 0, connected = 0, selected = 0, nfds = 0, i = 0, j = 0;
+    int quit = 0, connected = 0, selected = 0, nfds = 0, i = 0, j = 0, accessing = 0;
     struct timeval root_timer, *timerp = NULL;
     /* main variables */
     iamroot_connection my_connect;
@@ -111,18 +111,15 @@ int main(int argc, char const *argv[])
         /* ask N best pops if ROOT */
         if (myself.amiroot == true && myself.popcounter < my_connect.bestpops)
         {
+            /* send pop request message - the child will reply later */
             /* check if I have pop, otherwise request for pops */
-            if (my_connect.tcpsessions > myself.nofchildren)
+            if (my_connect.tcpsessions > myself.nofchildren+accessing)
             {
                 if(sprintf(myself.ipaddrtport[myself.popcounter], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
                 {
                     perror("[ERROR] Setting owned POPs ");
                 }
                 myself.popcounter++;
-            }
-            else
-            {
-                /* ASK FOR POPS */
             }
         }
 
@@ -158,6 +155,11 @@ int main(int argc, char const *argv[])
             if(myself.amiroot == true && FD_ISSET(myself.accessfd, &rfds))
             {
                 myself.popcounter--;
+                /* exception if we try to access the root WHEN it still has slots*/
+                if (myself.nofchildren < my_connect.tcpsessions)
+                {
+                    accessing=1;
+                }
                 if (myself.popcounter < 0)
                 {
                     printf("[LOG] Unexpected lack of POPs \n");
@@ -177,6 +179,7 @@ int main(int argc, char const *argv[])
             /* check if it's a peer trying to join the tree */
             if (FD_ISSET(myself.recvfd, &rfds))
             {
+                accessing=0;
                 /* accept it and send a message of welcome or redirect */
                 if (myself.nofchildren < my_connect.tcpsessions)
                 {
@@ -205,9 +208,13 @@ int main(int argc, char const *argv[])
                         printf("[LOG] Error accepting children \n");
                     }
                     myself.popcounter--;
-                    if (myself.popcounter < 0 || stream_redirect(i, myself.ipaddrtport[myself.popcounter], my_ci.debug))
+                    if (myself.popcounter < 0 )
                     {
+                        printf("[LOG] Unexpected lack of POPs \n");
                         myself.popcounter = 0;
+                    }
+                    if (stream_redirect(i, myself.ipaddrtport[myself.popcounter], my_ci.debug))
+                    {
                         printf("[LOG] Failed to redirect temp child \n");
                     }
                     tcp_disconnect(i);
