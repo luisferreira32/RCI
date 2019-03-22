@@ -51,4 +51,11 @@ typedef struct peer_connection_s
     int nofchildren;
 }peer_conneciton;
 
+typedef struct pop_list_s
+{
+    struct pop_list_s * next;
+    char queryID[4];
+    int bestpops;
+}pop_list;
+
 #endif

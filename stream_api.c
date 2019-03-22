@@ -43,11 +43,12 @@ int stream_recv(int sockfd, char * smallbuffer, bool debug)
 }
 
 /* read stream capsule downstream and return values accondringly */
-int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, client_interface * my_ci, int extra)
+int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, client_interface * my_ci, int extra, pop_list * head)
 {
     /* variables */
-    char header[SSBUFFSIZE], size[5];
-    int data_size = 0;
+    char header[SSBUFFSIZE], size[5], message[SBUFFSIZE];
+    int data_size = 0, i = 0;
+    pop_list * iter, * new;
 
     /* if i'm root it can only be DATA, let's capsule it and resend*/
     if (myself->amiroot == true)
@@ -119,6 +120,59 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
     {
         myself->interrupted = true;
     }
+    else if(strcmp(header, "PQ") == 0)
+    {
+        /* add an element to our pop list */
+        new = (pop_list *)malloc(sizeof(pop_list));
+        new->next = NULL;
+        if (head == NULL)
+        {
+            head = new;
+        }
+        else
+        {
+            iter = head;
+            while (iter->next != NULL)iter=iter->next;
+            iter->next = new;
+        }
+        /* and retrieve PQ id and best pops*/
+        if (sscanf(capsule, "%s %s %d\n", header, new->queryID, &(new->bestpops)) != 3)
+        {
+            printf("[LOG] Failed to get PQ ID & bestpops\n");
+            return -1;
+        }
+        /* if i can still accept tcps connections send my POPs*/
+        if (myself->nofchildren < my_connect->tcpsessions)
+        {
+            if (sprintf(message, "PR %s %s:%d %d\n", new->queryID, my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions-myself->nofchildren)<0)
+            {
+                perror("[ERROR] Failed to formulate welcome message ");
+                return -1;
+            }
+            if (tcp_send(myself->fatherfd, message, strlen(message), my_ci->debug))
+            {
+                return -1;
+            }
+            new->bestpops--;
+        }
+        /* if he still wants more pops request from children*/
+        if (new->bestpops > 0)
+        {
+            memset(message, 0, SBUFFSIZE);
+            if (sprintf(message, "PQ %s %d\n", new->queryID,new->bestpops)<0)
+            {
+                perror("[ERROR] Failed to formulate welcome message ");
+                return -1;
+            }
+            for (i = 0; i < myself->nofchildren; i++)
+            {
+                if (tcp_send(myself->childrenfd[i], message, strlen(message), my_ci->debug))
+                {
+                    return -1;
+                }
+            }
+        }
+    }
     else
     {
         printf("[LOG] Protocol not followed by father\n");
@@ -172,35 +226,30 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 
 
 /* upstream message treatment */
-int stream_recv_upstream(int childfd, peer_conneciton* myself, iamroot_connection * my_connect, bool debug)
+int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list * head)
 {
     /* variables */
-    char recv_msg[SBUFFSIZE], header[SSBUFFSIZE];
-    int size_recv = 0;
+    char  header[SSBUFFSIZE], queryID[4];
+    pop_list *iter, *aux;
 
-    /* clear buffer */
-    memset(recv_msg,0,SBUFFSIZE);
-    /* recieve message from stream parent */
-    if ((size_recv = tcp_recv(childfd, recv_msg, SBUFFSIZE, debug))<0)
+    /* if there is an extra flag it means we're recieving a tree reply*/
+    if (extra > 0)
     {
-        printf("[LOG] Failed to recieve stream content \n");
-    }
-    else if (size_recv == 0)
-    {
-        return 0;
+        /* code */
     }
 
     /* check according to header the procedure */
     memset(header, 0, SSBUFFSIZE);
-    if (sscanf(recv_msg, "%s ", header) ==0)
+    if (sscanf(capsule, "%s ", header) ==0)
     {
         perror("[ERROR] Failed to fetch header from stream message ");
+        return -1;
     }
 
     /* if it's a new pop i must save it for possible redirect*/
     if (strcmp(header, "NP")==0)
     {
-        if (myself->popcounter > my_connect->bestpops || sscanf(recv_msg, "%s %s\n", header, myself->ipaddrtport[myself->popcounter])!=2)
+        if (myself->popcounter > my_connect->bestpops || sscanf(capsule, "%s %s\n", header, myself->ipaddrtport[myself->popcounter])!=2)
         {
             printf("[LOG] Did not add NP\n" );
         }
@@ -209,8 +258,60 @@ int stream_recv_upstream(int childfd, peer_conneciton* myself, iamroot_connectio
             myself->popcounter++;
         }
     }
+    else if (strcmp(header, "PR") == 0)
+    {
+        /* if i'm root just save the POP if we have slot*/
+        if (myself->amiroot == true && my_connect->bestpops > myself->popcounter)
+        {
+            if (sscanf(capsule, "%s %s %s ", header, queryID, myself->ipaddrtport[myself->popcounter]) != 3)
+            {
+                printf("[LOG] Failed to get pop \n");
+            }
+            else
+            {
+                myself->popcounter++;
+            }
+        }
+        /* or propagate according to the requests */
+        else
+        {
+            if (sscanf(capsule, "%s %s ",header, queryID) != 2)
+            {
+                printf("[LOG] Failed to get popq ID\n");
+                return -1;
+            }
+            iter = head;
+            while (iter != NULL)
+            {
+                /*only reply if we have the queryID asking */
+                if (strcmp(queryID, iter->queryID)==0)
+                {
+                    if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))
+                    {
+                        return -1;
+                    }
+                    iter->bestpops--;
+                    break;
+                }
+                iter = iter->next;
+            }
+            /* take out request of list if no longer needed */
+            if (iter->bestpops <= 0)
+            {
+                aux = iter;
+                iter = head;
+                while (iter->next != NULL && iter->next != aux) iter = iter->next;
+                iter->next = aux->next; /* either was head and points null again or the next on the list */
+                free(aux);
+            }
+        }
+    }
+    else
+    {
+        printf("[LOG] Child not following Protocol\n" );
+    }
 
-    return size_recv;
+    return 0;
 
 }
 
@@ -287,5 +388,27 @@ int stream_redirect(int tempchild, char * ipaddrtport, bool debug)
         return -1;
     }
 
+    return 0;
+}
+
+/* query all my children for POPs and recieve the first pops */
+int stream_popquery(peer_conneciton * myself, iamroot_connection * my_connect, bool debug)
+{
+    int i = 0;
+    char message[SBUFFSIZE];
+
+    for (i = 0; i < myself->nofchildren; i++)
+    {
+        memset(message, 0, SBUFFSIZE);
+        if (sprintf(message, "PQ %04X %d\n", i ,my_connect->bestpops-myself->popcounter)<0)
+        {
+            perror("[ERROR] Failed to formulate welcome message ");
+            return -1;
+        }
+        if (tcp_send(myself->childrenfd[i], message, strlen(message), debug))
+        {
+            return -1;
+        }
+    }
     return 0;
 }

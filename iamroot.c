@@ -25,6 +25,7 @@ int main(int argc, char const *argv[])
     /* flags */
     int quit = 0, connected = 0, selected = 0, accessing = 0;
     /* main variables */
+    pop_list *head = NULL, *iter = NULL;
     iamroot_connection my_connect;
     client_interface my_ci;
     peer_conneciton myself;
@@ -84,8 +85,7 @@ int main(int argc, char const *argv[])
             else
             {
                 /* it's operational go for it!*/
-                connected = 1; noftries = 0;
-                myself.interrupted = false;
+                connected = 1; noftries = 0; myself.interrupted = false;
                 stream_status(&myself, my_ci.debug);
                 render_header();
             }
@@ -119,8 +119,7 @@ int main(int argc, char const *argv[])
         /* ask N best pops if ROOT */
         if (myself.amiroot == true && myself.popcounter < my_connect.bestpops)
         {
-            /* send pop request message - the child will reply later */
-            /* check if I have pop, otherwise request for pops */
+            /* check if I have pop, otherwise request for pops only if needed */
             if (my_connect.tcpsessions > myself.nofchildren+accessing)
             {
                 if(sprintf(myself.ipaddrtport[myself.popcounter], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
@@ -176,6 +175,11 @@ int main(int argc, char const *argv[])
                 }
                 /* reply the access server request */
                 pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[myself.popcounter], my_ci.debug);
+                /* and replenish pops */
+                if (stream_popquery(&myself, &my_connect, my_ci.debug))
+                {
+                    printf("[LOG] Failed to send pop queries \n");
+                }
             }
 
             /* read the stream and propagate to children */
@@ -185,8 +189,7 @@ int main(int argc, char const *argv[])
                 memset(recv_buffer, 0, SBUFFSIZE);
                 if((connected = stream_recv(myself.fatherfd, recv_buffer, my_ci.debug))==0)
                 {
-                    tcp_disconnect(myself.fatherfd);
-                    myself.interrupted = true;
+                    tcp_disconnect(myself.fatherfd);myself.interrupted = true;
                     stream_status(&myself, my_ci.debug);
                 }
                 else if(connected < 0)
@@ -196,10 +199,10 @@ int main(int argc, char const *argv[])
                 else
                 {
                     /* check for line endings */
-                    buff_end = 0; buff_end2 = 0;
+                    buff_end = 0; buff_end2 = strlen(myself.fatherbuff);
                     while ((int)strlen(recv_buffer) > buff_end )
                     {
-                        if ( recv_buffer[buff_end] != '\n')
+                        if ( recv_buffer[buff_end] != '\n' && buff_end2< SBUFFSIZE-1)
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
                             buff_end2++;
@@ -207,9 +210,10 @@ int main(int argc, char const *argv[])
                         else
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
-                            if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra))<0)
+                            if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra, head))<0)
                             {
                                 printf("[LOG] Failed to treat father's message\n");
+                                extra = 0;
                             }
                             buff_end2 = 0;
                             memset(myself.fatherbuff, 0, SBUFFSIZE);
@@ -270,8 +274,9 @@ int main(int argc, char const *argv[])
             {
                 if (FD_ISSET(myself.childrenfd[i], &rfds))
                 {
-                    /* check the upstream message if it's 0 - disconnect child */
-                    if (stream_recv_upstream(myself.childrenfd[i], &myself, &my_connect, my_ci.debug)==0)
+                    /* if size recieved is 0 it's a closing statement, reconnect */
+                    memset(recv_buffer, 0, SBUFFSIZE);
+                    if((j=stream_recv(myself.childrenfd[i], recv_buffer, my_ci.debug))==0)
                     {
                         tcp_disconnect(myself.childrenfd[i]);
                         for (j = i; j < myself.nofchildren-1; j++)
@@ -280,7 +285,34 @@ int main(int argc, char const *argv[])
                         }
                         myself.nofchildren--;
                     }
-                    /* else go on! */
+                    else if(j < 0)
+                    {
+                        quit = 1;
+                    }
+                    else
+                    {
+                        /* check for line endings */
+                        buff_end = 0; buff_end2 = strlen(myself.childbuff[i]);
+                        while ((int)strlen(recv_buffer) > buff_end )
+                        {
+                            if ( recv_buffer[buff_end] != '\n' && buff_end2 < SBUFFSIZE-1)
+                            {
+                                myself.childbuff[i][buff_end2] = recv_buffer[buff_end];
+                                buff_end2++;
+                            }
+                            else
+                            {
+                                myself.childbuff[i][buff_end2] = recv_buffer[buff_end];
+                                if ((extra = stream_recv_upstream(myself.childbuff[i], &myself, &my_connect, my_ci.debug, extra, head))<0)
+                                {
+                                    printf("[LOG] Failed to treat father's message\n");
+                                }
+                                buff_end2= 0;
+                                memset(myself.childbuff[i], 0, SBUFFSIZE);
+                            }
+                            buff_end ++;
+                        }
+                    }
                 }
             }
         }
@@ -302,7 +334,7 @@ int main(int argc, char const *argv[])
     }
     else
     {
-        printf("[LOG] Good bye father...\n");
+        printf("[LOG] Good bye root...\n");
     }
 
 
@@ -314,6 +346,13 @@ int main(int argc, char const *argv[])
 
     /* free any alocated memory */
     free_memory(&myself, &my_connect);
+    iter = head;
+    while (head != NULL)
+    {
+        iter = head;
+        head = head->next;
+        free(iter);
+    }
 
     return 0;
 }
