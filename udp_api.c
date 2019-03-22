@@ -42,13 +42,23 @@ int udp_send(int socket_fd, void * buf, size_t count, struct sockaddr_in * peer,
 /************************************************************************************************/
 /**** udp_recv **** recieves datagram
 INPUT - socket file descriptor buffer size and flags
-OUTPUT - bytes sent
+OUTPUT - bytes recieved
 */
 int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bool debug)
 {
-    int bytes_recv = 0;
+    int bytes_recv = 0, nfd = 0;
     socklen_t addrlen = sizeof(struct sockaddr_in);
+    fd_set readfd;
+    struct timeval timeout;
 
+    /* use a select with timeout to exit */
+    FD_SET(socket_fd, &readfd);nfd=socket_fd+1;
+    timeout.tv_usec=0;timeout.tv_sec=15;
+    if (select(nfd, &readfd, NULL, NULL, &timeout)==0)
+    {
+        perror("[LOG] UDP recv timed out ");
+        return -1;
+    }
     /* recieve message */
     memset(buf, 0, count);
     if((bytes_recv= recvfrom(socket_fd, buf, count, 0, (struct sockaddr *)peer, &addrlen))<0)

@@ -16,10 +16,11 @@ void string_lowercase(char * string)
 }
 
 /* interprets the user commands */
-int read_command(char * command_buffer, iamroot_connection * my_connect, client_interface * my_ci)
+int read_command(char * command_buffer, iamroot_connection * my_connect, client_interface * my_ci, peer_conneciton * myself)
 {
     /*variables*/
     char answer_buffer[MBUFFSIZE];
+    int i =0;
 
     string_lowercase(command_buffer);
     /* command intrepertation */
@@ -36,7 +37,23 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     }
     else if(strcmp(command_buffer, "status\n") == 0)
     {
-        printf("%s\n", my_connect->streamID);
+        printf("streamID: %s\n", my_connect->streamID);
+        printf("interrupted: %s\n",  myself->interrupted ? "yes":"no");
+        printf("amiroot: %s\n", myself->amiroot ? "yes":"no" );
+        if (myself->amiroot)
+        {
+            printf("access server: %s:%d\n", my_connect->ipaddr, my_connect->uport);
+        }
+        else
+        {
+            printf("father id: %s:%d\n", my_connect->streamip, my_connect->streamport );
+        }
+        printf("tcp access point: %s:%d\n",my_connect->ipaddr, my_connect->tport );
+        printf("tcpsessions/occupied: %d/%d\n", my_connect->tcpsessions, myself->nofchildren);
+        for (i = 0; i < myself->nofchildren; i++)
+        {
+            printf("child %d: %s\n",i+1,myself->childrenaddr[i]);
+        }
     }
     else if(strcmp(command_buffer, "display on\n") == 0)
     {
@@ -64,7 +81,7 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     }
     else if(strcmp(command_buffer, "tree\n") == 0)
     {
-
+        /* make tree request, when recieving tree msg auto print it?*/
     }
     else if(strcmp(command_buffer, "exit\n") == 0)
     {

@@ -30,12 +30,14 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer
     strcpy(my_ci->format, DFORMAT);
 
     myself->amiroot = true;
+    myself->interrupted = false;
     myself->ipaddrtport = NULL;
     myself->popcounter = 0;
     myself->accessfd = -1;
     myself->recvfd = -1;
     myself->fatherfd = -1;
     myself->childrenfd = NULL;
+    myself->childrenaddr = NULL;
     myself->nofchildren = 0;
 
 }

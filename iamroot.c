@@ -40,6 +40,11 @@ int main(int argc, char const *argv[])
     {
         /* allocate memory accordingly and open service to recieve children*/
         myself.childrenfd = (int *)malloc(sizeof(int)*my_connect.tcpsessions);
+        myself.childrenaddr = (char **)malloc(sizeof(char *)*my_connect.tcpsessions);
+        for (i = 0; i < my_connect.tcpsessions; i++)
+        {
+            myself.childrenaddr[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
+        }
         if((myself.recvfd = recieve_listeners(my_connect.tport))<0)
         {
             printf("[LOG] Failed to open tcp socket \n");
@@ -59,6 +64,7 @@ int main(int argc, char const *argv[])
         /* connects IF not already connected */
         if(connected == 0)
         {
+            sleep(1); /* to make sure changes are made on ROOT server */
             printf("[LOG] Connecting to a stream...\n");
             /* connect to stream since there is a stream ID */
             if(sprintf(request_buffer,"WHOISROOT %s %s:%d\n", my_connect.streamID, my_connect.ipaddr, my_connect.uport)<0)
@@ -147,7 +153,7 @@ int main(int argc, char const *argv[])
                 {
                     break;
                 }
-                quit = read_command(request_buffer, &my_connect, &my_ci);
+                quit = read_command(request_buffer, &my_connect, &my_ci, &myself);
             }
 
             /* read access fd if root*/
@@ -172,8 +178,14 @@ int main(int argc, char const *argv[])
             if (FD_ISSET(myself.fatherfd,&rfds))
             {
                 /* if size recieved is 0 it's a closing statement, reconnect */
-                connected = stream_recv_downstream(&myself, &my_ci, &my_connect);
-                tcp_disconnect(myself.fatherfd);
+                if((connected = stream_recv_downstream(&myself, &my_ci, &my_connect))==0)
+                {
+                    tcp_disconnect(myself.fatherfd);
+                }
+                else if(connected < 0)
+                {
+                    quit = 1;
+                }
             }
 
             /* check if it's a peer trying to join the tree */
@@ -184,7 +196,7 @@ int main(int argc, char const *argv[])
                 if (myself.nofchildren < my_connect.tcpsessions)
                 {
                     /* accept to a new fd */
-                    if ((myself.childrenfd[myself.nofchildren] = accept_children(myself.recvfd)) < 0)
+                    if ((myself.childrenfd[myself.nofchildren] = accept_children(myself.recvfd, myself.childrenaddr[myself.nofchildren])) < 0)
                     {
                         printf("[LOG] Error accepting children \n");
                     }
@@ -203,7 +215,7 @@ int main(int argc, char const *argv[])
                 /* else connect, redirect and disconnect */
                 else
                 {
-                    if ((i = accept_children(myself.recvfd)) < 0)
+                    if ((i = accept_children(myself.recvfd, NULL)) < 0)
                     {
                         printf("[LOG] Error accepting children \n");
                     }
@@ -247,7 +259,7 @@ int main(int argc, char const *argv[])
     if(myself.amiroot == true)
     {
         /* take stream root off root server */
-        if(sprintf(request_buffer,"REMOVE %s:%s:%d\n", my_connect.streamname, my_connect.streamip, my_connect.streamport)<0)
+        if(sprintf(request_buffer,"REMOVE %s\n", my_connect.streamID)<0)
         {
             perror("[ERROR] Formulating stream request failed ");
         }
@@ -266,11 +278,13 @@ int main(int argc, char const *argv[])
     /* close all open tcps */
     if (myself.accessfd != -1)tcp_disconnect(myself.accessfd);
     if(myself.fatherfd != -1)tcp_disconnect(myself.fatherfd);
-    if(myself.recvfd != -1)tcp_disconnect(myself.recvfd);
     for ( i = 0; i < myself.nofchildren; i++)tcp_disconnect(myself.childrenfd[i]);
+    if(myself.recvfd != -1)tcp_disconnect(myself.recvfd);
 
     /* free any alocated memory */
     free(myself.childrenfd);
+    for (i = 0; i < my_connect.tcpsessions; i++)free(myself.childrenaddr[i]);
+    free(myself.childrenaddr);
     for (i = 0; i < my_connect.bestpops; i++)free(myself.ipaddrtport[i]);
     free(myself.ipaddrtport);
 

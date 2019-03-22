@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/select.h>
 
 /* defines */
 

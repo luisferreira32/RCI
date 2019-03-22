@@ -15,9 +15,17 @@ int recieve_listeners(int accessport)
 }
 
 /* create a fd for a child */
-int accept_children(int recvfd)
+int accept_children(int recvfd, char * addr)
 {
-    return tcp_accept(recvfd, NULL);
+    struct sockaddr_in addrstruct;
+    int fd = -1, port = -1;
+    char * buffer;
+
+    fd = tcp_accept(recvfd, &addrstruct);
+    buffer = inet_ntoa(addrstruct.sin_addr);
+    port = ntohs(addrstruct.sin_port);
+    sprintf(addr, "%s:%d", buffer, port);
+    return fd;
 }
 
 /* connect to stream and return its file descritor*/
@@ -30,13 +38,14 @@ int connect_stream(char * streamip, int streamport)
 int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, iamroot_connection * my_connect)
 {
     /* variables */
-    char recv_msg[SBUFFSIZE], header[SSBUFFSIZE], capsule[SBUFFSIZE], data[SBUFFSIZE];
-    int size_recv = 0, i = 0;
+    char recv_msg[SBUFFSIZE-SSBUFFSIZE], header[SSBUFFSIZE], capsule[SBUFFSIZE], size[5],data[SBUFFSIZE];
+    char * extra_data, *extra_capsule;
+    int size_recv = 0, i = 0, data_size = 0;
 
     /* clear buffer */
     memset(recv_msg,0,SBUFFSIZE);
     /* recieve message from stream parent */
-    if ((size_recv = tcp_recv(myself->fatherfd, recv_msg, SBUFFSIZE, my_ci->debug))<0)
+    if ((size_recv = tcp_recv(myself->fatherfd, recv_msg, SBUFFSIZE-SSBUFFSIZE, my_ci->debug))<0)
     {
         printf("[LOG] Failed to recieve stream content \n");
     }
@@ -71,21 +80,35 @@ int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, ia
     if (strcmp("DA", header) == 0)
     {
         /*read the data*/
-            /* MISSING THIS PART - send it to data*/
-            strcpy(data, capsule);
+        if (sscanf(capsule, "%s %[^\n] %[^\n]", header, size, data) != 3)
+        {
+            printf("[LOG] Failed to fetch data \n");
+            return -1;
+        }
+        data_size = strtol(size, NULL, 16);
+        /* if data_size is larger than data recieved */
+        if ((data_size > size_recv - 8 && myself->amiroot == false)||(data_size > size_recv && myself->amiroot == true))
+        {
+            /* code */
+        }
+        else
+        {
+            extra_data = data;
+            extra_capsule = capsule;
+        }
         /*display*/
         if (my_ci->display == true)
         {
             /*ascii*/
             if (strcmp(my_ci->format, "ascii")==0)
             {
-                printf("%s", data);
+                printf("%s\n", extra_data);
             }
             else /*or hex*/
             {
-                for (i = 0; i < (int)strlen(data); i++)
+                for (i = 0; i < (int)strlen(extra_data); i++)
                 {
-                    printf("%02X", (unsigned int)data[i]);
+                    printf("%02X", (unsigned int)extra_data[i]);
                 }
                 printf("\n");
             }
@@ -93,20 +116,27 @@ int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, ia
         /* then resend it to children*/
         for (i = 0; i < myself->nofchildren; i++)
         {
-            if (tcp_send(myself->childrenfd[i], capsule, strlen(capsule),my_ci->debug))
+            if (tcp_send(myself->childrenfd[i], extra_capsule, strlen(extra_capsule),my_ci->debug))
             {
                 printf("[LOG] Failed to propagate message to child %d\n", i+1);
             }
+        }
+        /* and free temp memory if had any */
+        if ((data_size > size_recv - 8 && myself->amiroot == false)||(data_size > size_recv && myself->amiroot == true))
+        {
+            free(extra_data);
+            free(extra_capsule);
         }
     }
     /* a welcome message after joining the stream */
     else if(strcmp(header, "WE") == 0)
     {
-        if (sprintf(data, "NP %s:%d\n", my_connect->ipaddr, my_connect->tport)<0)
+        memset(capsule, 0, SBUFFSIZE);
+        if (sprintf(capsule, "NP %s:%d\n", my_connect->ipaddr, my_connect->tport)<0)
         {
             perror("[ERROR] Failed to formulate NP message ");
         }
-        if (tcp_send(myself->fatherfd, data, strlen(data), my_ci->debug))
+        if (tcp_send(myself->fatherfd, capsule, strlen(capsule), my_ci->debug))
         {
             printf("[LOG] Failed to reply to WELCOME message\n");
         }
@@ -158,8 +188,8 @@ int stream_recv_upstream(int childfd, peer_conneciton* myself, iamroot_connectio
         perror("[ERROR] Failed to fetch header from stream message ");
     }
 
-    /* if it's a new pop and im root, i must save it*/
-    if (strcmp(header, "NP")==0 && myself->amiroot == true)
+    /* if it's a new pop i must save it for possible redirect*/
+    if (strcmp(header, "NP")==0)
     {
         if (myself->popcounter > my_connect->bestpops || sscanf(recv_msg, "%s %s\n", header, myself->ipaddrtport[myself->popcounter])!=2)
         {

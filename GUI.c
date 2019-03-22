@@ -10,7 +10,7 @@ void render_header(void)
     printf("********************************************************\n");
     printf("**          WELCOME TO THE STREAM LISTENNER!          **\n");
     printf("**                                                    **\n");
-    printf("** Notice input is case sensitive and from this list: **\n");
+    printf("** Input only valid from this list:                   **\n");
     printf("** streams                                            **\n");
     printf("** status                                             **\n");
     printf("** display on/off                                     **\n");

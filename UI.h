@@ -16,6 +16,6 @@
 /* struct definitions */
 
 /* funcitons definitios */
-int read_command(char *, iamroot_connection *, client_interface *);
+int read_command(char *, iamroot_connection *, client_interface *, peer_conneciton *);
 
 #endif

@@ -37,12 +37,14 @@ typedef struct client_interface_s
 typedef struct peer_connection_s
 {
     bool amiroot;
+    bool interrupted;
     char ** ipaddrtport;
     int popcounter;
     int accessfd;
     int fatherfd;
     int recvfd;
     int * childrenfd;
+    char ** childrenaddr;
     int nofchildren;
 }peer_conneciton;
 
