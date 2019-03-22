@@ -19,8 +19,8 @@
 int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
-    char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE];
-    int nfds = 0, i = 0, j = 0, noftries = 0;
+    char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE], recv_buffer[SBUFFSIZE];
+    int nfds = 0, i = 0, j = 0, noftries = 0, extra = 0, buff_end = 0, buff_end2 = 0;
     struct timeval root_timer, *timerp = NULL;
     /* flags */
     int quit = 0, connected = 0, selected = 0, accessing = 0;
@@ -182,7 +182,8 @@ int main(int argc, char const *argv[])
             if (FD_ISSET(myself.fatherfd,&rfds))
             {
                 /* if size recieved is 0 it's a closing statement, reconnect */
-                if((connected = stream_recv_downstream(&myself, &my_ci, &my_connect))==0)
+                memset(recv_buffer, 0, SBUFFSIZE);
+                if((connected = stream_recv(myself.fatherfd, recv_buffer, my_ci.debug))==0)
                 {
                     tcp_disconnect(myself.fatherfd);
                     myself.interrupted = true;
@@ -191,6 +192,30 @@ int main(int argc, char const *argv[])
                 else if(connected < 0)
                 {
                     quit = 1;
+                }
+                else
+                {
+                    /* check for line endings */
+                    buff_end = 0; buff_end2 = 0;
+                    while ((int)strlen(recv_buffer) > buff_end )
+                    {
+                        if ( recv_buffer[buff_end] != '\n')
+                        {
+                            myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
+                            buff_end2++;
+                        }
+                        else
+                        {
+                            myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
+                            if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra))<0)
+                            {
+                                printf("[LOG] Failed to treat father's message\n");
+                            }
+                            buff_end2 = 0;
+                            memset(myself.fatherbuff, 0, SBUFFSIZE);
+                        }
+                        buff_end ++;
+                    }
                 }
             }
 

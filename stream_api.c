@@ -34,38 +34,30 @@ int connect_stream(char * streamip, int streamport)
     return tcp_client(NULL, streamip, streamport);
 }
 
-/* read stream and propagate */
-int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, iamroot_connection * my_connect)
+/* flush to buffer */
+int stream_recv(int sockfd, char * smallbuffer, bool debug)
+{
+    int size_recv = -1;
+    size_recv = tcp_recv(sockfd, smallbuffer, SBUFFSIZE, debug);
+    return size_recv;
+}
+
+/* read stream capsule downstream and return values accondringly */
+int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, client_interface * my_ci, int extra)
 {
     /* variables */
-    char recv_msg[SBUFFSIZE-SSBUFFSIZE], header[SSBUFFSIZE], capsule[SBUFFSIZE], size[5],data[SBUFFSIZE];
-    char * extra_data, *extra_capsule;
-    int size_recv = 0, i = 0, data_size = 0;
-
-    /* clear buffer */
-    memset(recv_msg,0,SBUFFSIZE);
-    /* recieve message from stream parent */
-    if ((size_recv = tcp_recv(myself->fatherfd, recv_msg, SBUFFSIZE-SSBUFFSIZE, my_ci->debug))<0)
-    {
-        printf("[LOG] Failed to recieve stream content \n");
-    }
-    else if (size_recv == 0)
-    {
-        return 0;
-    }
+    char header[SSBUFFSIZE], size[5];
+    int data_size = 0;
 
     /* if i'm root it can only be DATA, let's capsule it and resend*/
-    memset(capsule, 0, SBUFFSIZE);
     if (myself->amiroot == true)
     {
-        if (sprintf(capsule, "DA %04X\n%s", (unsigned int)strlen(recv_msg),recv_msg)<0)
-        {
-            perror("[ERROR] Failed to encapsule ");
-        }
+        return stream_data(capsule, myself, my_ci);
     }
-    else
+    /* if we're recieving an extra it means what is on capsule is raw DATA */
+    if (extra > 0)
     {
-        strcpy(capsule, recv_msg);
+        return stream_data(capsule, myself, my_ci);
     }
 
     /* check according to header the procedure */
@@ -80,53 +72,13 @@ int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, ia
     if (strcmp("DA", header) == 0 && myself->interrupted == false)
     {
         /*read the data*/
-        if (sscanf(capsule, "%s %[^\n] %[^\n]", header, size, data) != 3)
+        if (sscanf(capsule, "%s %[^\n]", header, size) != 2)
         {
             printf("[LOG] Failed to fetch data \n");
             return -1;
         }
         data_size = strtol(size, NULL, 16);
-        /* if data_size is larger than data recieved */
-        if ((data_size > size_recv - 8 && myself->amiroot == false)||(data_size > size_recv && myself->amiroot == true))
-        {
-            /* code */
-        }
-        else
-        {
-            extra_data = data;
-            extra_capsule = capsule;
-        }
-        /*display*/
-        if (my_ci->display == true)
-        {
-            /*ascii*/
-            if (strcmp(my_ci->format, "ascii")==0)
-            {
-                printf("%s\n", extra_data);
-            }
-            else /*or hex*/
-            {
-                for (i = 0; i < (int)strlen(extra_data); i++)
-                {
-                    printf("%02X", (unsigned int)extra_data[i]);
-                }
-                printf("\n");
-            }
-        }
-        /* then resend it to children*/
-        for (i = 0; i < myself->nofchildren; i++)
-        {
-            if (tcp_send(myself->childrenfd[i], extra_capsule, strlen(extra_capsule),my_ci->debug))
-            {
-                printf("[LOG] Failed to propagate message to child %d\n", i+1);
-            }
-        }
-        /* and free temp memory if had any */
-        if ((data_size > size_recv - 8 && myself->amiroot == false)||(data_size > size_recv && myself->amiroot == true))
-        {
-            free(extra_data);
-            free(extra_capsule);
-        }
+        return data_size;
     }
     /* a welcome message after joining the stream */
     else if(strcmp(header, "WE") == 0)
@@ -172,8 +124,52 @@ int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, ia
         printf("[LOG] Protocol not followed by father\n");
     }
 
-    return size_recv;
+    return 0;
 }
+
+/* IF it's a data we'll print it and resend it */
+int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
+{
+    int i = 0;
+    char * capsule = (char *)malloc(sizeof(char)*strlen(data)+10);
+
+    if (sprintf(capsule, "DA %04X\n%s", (unsigned int)strlen(data), data)<0)
+    {
+        perror("[ERROR] Failed to encapsule ");
+    }
+
+    /*display*/
+    if (my_ci->display == true)
+    {
+        /* take off the \n that is per default on data*/
+        data[strlen(data)-1]='\0';
+        /*ascii*/
+        if (strcmp(my_ci->format, "ascii")==0)
+        {
+            printf("%s\n", data);
+        }
+        else /*or hex*/
+        {
+            for (i = 0; i < (int)strlen(data); i++)
+            {
+                printf("%02X", (unsigned int)data[i]);
+            }
+            printf("\n");
+        }
+    }
+    /* then resend it to children*/
+    for (i = 0; i < myself->nofchildren; i++)
+    {
+        if (tcp_send(myself->childrenfd[i], capsule, strlen(capsule),my_ci->debug))
+        {
+            printf("[LOG] Failed to propagate message to child %d\n", i+1);
+        }
+    }
+
+    free(capsule);
+    return 0;
+}
+
 
 /* upstream message treatment */
 int stream_recv_upstream(int childfd, peer_conneciton* myself, iamroot_connection * my_connect, bool debug)

@@ -9,6 +9,7 @@
 #define BBUFFSIZE 1000
 #define STDIN 0
 #define POPBEGIN 10
+#define ISTREE -2
 
 /* struct definitions */
 typedef struct iamroot_connection_s
