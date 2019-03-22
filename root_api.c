@@ -75,6 +75,12 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
             printf("[LOG] Failed to open access server \n");
             return -1;
         }
+        /* reset the streamip and port source, now from root! */
+        if(sscanf(my_connect->streamID, "%[^:]:%[^:]:%d", my_connect->streamname, my_connect->streamip, &my_connect->streamport) != 3)
+        {
+            perror("[ERROR] Streamid reading ");
+            return -1;
+        }
         /* connect to stream */
         if ((myself->fatherfd = connect_stream(my_connect->streamip, my_connect->streamport)) <0)
         {

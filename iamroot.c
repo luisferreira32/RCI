@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
         if(connected == 0)
         {
             sleep(1); /* to make sure changes are made on ROOT server */
-            printf("[LOG] Connecting to a stream...\n");
+            printf("[LOG] Connecting to a stream atempt %d...\n", noftries+1);
             /* connect to stream since there is a stream ID */
             if(sprintf(request_buffer,"WHOISROOT %s %s:%d\n", my_connect.streamID, my_connect.ipaddr, my_connect.uport)<0)
             {
@@ -73,25 +73,28 @@ int main(int argc, char const *argv[])
             if (myself.amiroot == true && quit == 1 && noftries < 3)
             {
                 connected = 0; quit = 0;
-                stream_broke(&myself, my_ci.debug);
                 noftries++;
+                continue;
             }
-            /* if not root and is failed to connect exit */
             else if(quit == 1)
             {
+                /* if not root and it failed to connect exit */
                 break;
             }
             else
             {
                 /* it's operational go for it!*/
-                connected = 1;
+                connected = 1; noftries = 0;
+                myself.interrupted = false;
+                stream_status(&myself, my_ci.debug);
                 render_header();
             }
         }
 
         /* reset every loop */
         FD_ZERO(&rfds);
-        nfds = 3 + my_connect.tcpsessions;
+        /* when tcp disconnect kernel KEEPS fd open for three minutes.. or program termination */
+        nfds = 10 + my_connect.tcpsessions;
         /* root specific -> timer & access server */
         if(myself.amiroot == true)
         {
@@ -105,12 +108,12 @@ int main(int argc, char const *argv[])
             timerp = NULL;
         }
         /* all other file descritors*/
-        FD_SET(STDIN, &rfds);
-        FD_SET(myself.fatherfd, &rfds);
-        FD_SET(myself.recvfd, &rfds);
+        FD_SET(STDIN, &rfds);nfds++;
+        FD_SET(myself.fatherfd, &rfds);nfds++;
+        FD_SET(myself.recvfd, &rfds);nfds++;
         for (i = 0; i < myself.nofchildren; i++)
         {
-            FD_SET(myself.childrenfd[i], &rfds);
+            FD_SET(myself.childrenfd[i], &rfds);nfds++;
         }
 
         /* ask N best pops if ROOT */
@@ -182,6 +185,8 @@ int main(int argc, char const *argv[])
                 if((connected = stream_recv_downstream(&myself, &my_ci, &my_connect))==0)
                 {
                     tcp_disconnect(myself.fatherfd);
+                    myself.interrupted = true;
+                    stream_status(&myself, my_ci.debug);
                 }
                 else if(connected < 0)
                 {
@@ -246,7 +251,7 @@ int main(int argc, char const *argv[])
                         tcp_disconnect(myself.childrenfd[i]);
                         for (j = i; j < myself.nofchildren-1; j++)
                         {
-                            myself.childrenfd[i] = myself.childrenfd[i+1];
+                            myself.childrenfd[j] = myself.childrenfd[j+1];
                         }
                         myself.nofchildren--;
                     }

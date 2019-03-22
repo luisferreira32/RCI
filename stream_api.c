@@ -142,7 +142,7 @@ int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, ia
         }
     }
     /* a redirect message after joining a full spot*/
-    else if(strcmp(header, "RE"))
+    else if(strcmp(header, "RE")==0)
     {
         if (sscanf(capsule, "%s %[^:]:%d", header, my_connect->streamip, &(my_connect->streamport)) != 3)
         {
@@ -251,17 +251,21 @@ int stream_welcome(iamroot_connection * my_connect, peer_conneciton * myself, bo
     return 0;
 }
 /* say stream is broken */
-int stream_broke(peer_conneciton * myself, bool debug)
+int stream_status(peer_conneciton * myself, bool debug)
 {
     /*variablres*/
     char bmessage[SSBUFFSIZE];
     int i = 0;
-    /* say stream is broken */
-    if (sprintf(bmessage, "BS\n")<0)
+    /* say stream is broken or not*/
+    if (myself->interrupted == false)
     {
-        perror("[ERROR] Failed to formulate broken stream message ");
-        return -1;
+        sprintf(bmessage, "SF\n");
     }
+    else
+    {
+        sprintf(bmessage, "BS\n");
+    }
+    /* to all childs */
     for (i = 0; i < myself->nofchildren; i++)
     {
         if (tcp_send(myself->childrenfd[i], bmessage, strlen(bmessage), debug))
