@@ -76,8 +76,8 @@ int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, ia
     }
 
     /* depending on header treat it  */
-    /* if it's data */
-    if (strcmp("DA", header) == 0)
+    /* can only be data if the stream is not broken */
+    if (strcmp("DA", header) == 0 && myself->interrupted == false)
     {
         /*read the data*/
         if (sscanf(capsule, "%s %[^\n] %[^\n]", header, size, data) != 3)
@@ -158,6 +158,19 @@ int stream_recv_downstream(peer_conneciton* myself, client_interface * my_ci, ia
             return -1;
         }
     }
+    /* check if stream is broken or not */
+    else if(strcmp(header, "SF")==0)
+    {
+        myself->interrupted = false;
+    }
+    else if(strcmp(header, "BS")==0)
+    {
+        myself->interrupted = true;
+    }
+    else
+    {
+        printf("[LOG] Protocol not followed by father\n");
+    }
 
     return size_recv;
 }
@@ -210,6 +223,7 @@ int stream_welcome(iamroot_connection * my_connect, peer_conneciton * myself, bo
 {
     char message[SBUFFSIZE];
 
+    /* welcome and stream info */
     if (sprintf(message, "WE %s\n", my_connect->streamID)<0)
     {
         perror("[ERROR] Failed to formulate welcome message ");
@@ -219,9 +233,45 @@ int stream_welcome(iamroot_connection * my_connect, peer_conneciton * myself, bo
     {
         return -1;
     }
+    /*strea status*/
+    memset(message,0,SBUFFSIZE);
+    if (myself->interrupted == false)
+    {
+        sprintf(message, "SF\n");
+    }
+    else
+    {
+        sprintf(message, "BS\n");
+    }
+    if (tcp_send(myself->childrenfd[myself->nofchildren], message, strlen(message), debug))
+    {
+        return -1;
+    }
 
     return 0;
 }
+/* say stream is broken */
+int stream_broke(peer_conneciton * myself, bool debug)
+{
+    /*variablres*/
+    char bmessage[SSBUFFSIZE];
+    int i = 0;
+    /* say stream is broken */
+    if (sprintf(bmessage, "BS\n")<0)
+    {
+        perror("[ERROR] Failed to formulate broken stream message ");
+        return -1;
+    }
+    for (i = 0; i < myself->nofchildren; i++)
+    {
+        if (tcp_send(myself->childrenfd[i], bmessage, strlen(bmessage), debug))
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 /* redirect message */
 int stream_redirect(int tempchild, char * ipaddrtport, bool debug)
 {

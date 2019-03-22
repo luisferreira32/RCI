@@ -29,6 +29,8 @@ void set_default(iamroot_connection *, client_interface *,peer_conneciton *);
 int set_connection(iamroot_connection *, client_interface *,peer_conneciton *, int, const char **);
 int is_ip(char *);
 void display_help(void);
+int set_memory(peer_conneciton *, iamroot_connection *);
+void free_memory(peer_conneciton *, iamroot_connection *);
 
 
 #endif

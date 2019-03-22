@@ -36,8 +36,10 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer
     myself->accessfd = -1;
     myself->recvfd = -1;
     myself->fatherfd = -1;
+    myself->fatherbuff = NULL;
     myself->childrenfd = NULL;
     myself->childrenaddr = NULL;
+    myself->childbuff = NULL;
     myself->nofchildren = 0;
 
 }
@@ -342,4 +344,44 @@ void display_help(void)
     printf("-b option to disable byte stream \n");
     printf("-d option to enable debug mode \n");
     printf("-h to see this log again \n\n");
+}
+
+/* set the memory */
+int set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
+{
+    int i = 0, quit = 0;
+
+    /* allocate memory accordingly and open service to recieve children*/
+    myself->childrenfd = (int *)malloc(sizeof(int)*my_connect->tcpsessions);
+    myself->childbuff = (char **)malloc(sizeof(char *)*my_connect->tcpsessions);
+    myself->childrenaddr = (char **)malloc(sizeof(char *)*my_connect->tcpsessions);
+    for (i = 0; i < my_connect->tcpsessions; i++)
+    {
+        myself->childrenaddr[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
+        myself->childbuff[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
+    }
+    if((myself->recvfd = recieve_listeners(my_connect->tport))<0)
+    {
+        printf("[LOG] Failed to open tcp socket \n");
+        quit = 1;
+    }
+    /* allocate for POPs*/
+    myself->ipaddrtport = (char **)malloc(sizeof(char *)*my_connect->bestpops);
+    for (i = 0; i < my_connect->bestpops; i++)
+    {
+        myself->ipaddrtport[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
+    }
+    return quit;
+}
+
+void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
+{
+    int i = 0;
+    free(myself->childrenfd);
+    for (i = 0; i < my_connect->tcpsessions; i++)free(myself->childrenaddr[i]);
+    free(myself->childrenaddr);
+    for (i = 0; i < my_connect->tcpsessions; i++)free(myself->childbuff[i]);
+    free(myself->childbuff);
+    for (i = 0; i < my_connect->bestpops; i++)free(myself->ipaddrtport[i]);
+    free(myself->ipaddrtport);
 }

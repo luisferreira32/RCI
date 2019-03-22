@@ -42,9 +42,11 @@ typedef struct peer_connection_s
     int popcounter;
     int accessfd;
     int fatherfd;
+    char * fatherbuff;
     int recvfd;
     int * childrenfd;
     char ** childrenaddr;
+    char ** childbuff;
     int nofchildren;
 }peer_conneciton;
 

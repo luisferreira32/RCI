@@ -22,5 +22,6 @@ int stream_recv_downstream(peer_conneciton*, client_interface *, iamroot_connect
 int stream_recv_upstream(int, peer_conneciton* , iamroot_connection * , bool);
 int stream_welcome(iamroot_connection * , peer_conneciton * , bool );
 int stream_redirect(int, char *, bool);
+int stream_broke(peer_conneciton *, bool);
 
 #endif

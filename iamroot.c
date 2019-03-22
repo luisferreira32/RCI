@@ -20,8 +20,10 @@ int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE];
-    int quit = 0, connected = 0, selected = 0, nfds = 0, i = 0, j = 0, accessing = 0;
+    int nfds = 0, i = 0, j = 0, noftries = 0;
     struct timeval root_timer, *timerp = NULL;
+    /* flags */
+    int quit = 0, connected = 0, selected = 0, accessing = 0;
     /* main variables */
     iamroot_connection my_connect;
     client_interface my_ci;
@@ -38,24 +40,7 @@ int main(int argc, char const *argv[])
     /* initial procedures */
     if (quit == 0)
     {
-        /* allocate memory accordingly and open service to recieve children*/
-        myself.childrenfd = (int *)malloc(sizeof(int)*my_connect.tcpsessions);
-        myself.childrenaddr = (char **)malloc(sizeof(char *)*my_connect.tcpsessions);
-        for (i = 0; i < my_connect.tcpsessions; i++)
-        {
-            myself.childrenaddr[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
-        }
-        if((myself.recvfd = recieve_listeners(my_connect.tport))<0)
-        {
-            printf("[LOG] Failed to open tcp socket \n");
-            quit = 1;
-        }
-        /* allocate for POPs*/
-        myself.ipaddrtport = (char **)malloc(sizeof(char *)*my_connect.bestpops);
-        for (i = 0; i < my_connect.bestpops; i++)
-        {
-            myself.ipaddrtport[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
-        }
+        quit = set_memory(&myself, &my_connect);
     }
 
     /* MAIN LOOP USING SELECT WITH TIMER TO REFRESH */
@@ -70,27 +55,43 @@ int main(int argc, char const *argv[])
             if(sprintf(request_buffer,"WHOISROOT %s %s:%d\n", my_connect.streamID, my_connect.ipaddr, my_connect.uport)<0)
             {
                 perror("[ERROR] Formulating stream request failed ");
-                quit = 1;break;
+                quit = 1;
             }
             /* based on request to root server connect to stream OR peer */
             if(run_request(request_buffer, answer_buffer, MBUFFSIZE, &my_connect, my_ci.debug))
             {
                 printf("[LOG] Running request failed\n");
-                quit = 1;break;
+                quit = 1;
             }
 
-            if(process_answer(answer_buffer, &my_connect, &myself, my_ci.debug))
+            if(quit == 1 || process_answer(answer_buffer, &my_connect, &myself, my_ci.debug))
             {
                 printf("[LOG] Processing answer failed\n");
-                quit = 1;break;
+                quit = 1;
             }
-            /* it's operational go for it!*/
-            connected = 1;
-            render_header();
+            /* if it was a root dc - try three times to connect */
+            if (myself.amiroot == true && quit == 1 && noftries < 3)
+            {
+                connected = 0; quit = 0;
+                stream_broke(&myself, my_ci.debug);
+                noftries++;
+            }
+            /* if not root and is failed to connect exit */
+            else if(quit == 1)
+            {
+                break;
+            }
+            else
+            {
+                /* it's operational go for it!*/
+                connected = 1;
+                render_header();
+            }
         }
 
         /* reset every loop */
-        FD_ZERO(&rfds);nfds = 2;
+        FD_ZERO(&rfds);
+        nfds = 3 + my_connect.tcpsessions;
         /* root specific -> timer & access server */
         if(myself.amiroot == true)
         {
@@ -104,12 +105,12 @@ int main(int argc, char const *argv[])
             timerp = NULL;
         }
         /* all other file descritors*/
-        FD_SET(STDIN, &rfds);nfds++;
-        FD_SET(myself.fatherfd, &rfds);nfds++;
-        FD_SET(myself.recvfd, &rfds);nfds++;
+        FD_SET(STDIN, &rfds);
+        FD_SET(myself.fatherfd, &rfds);
+        FD_SET(myself.recvfd, &rfds);
         for (i = 0; i < myself.nofchildren; i++)
         {
-            FD_SET(myself.childrenfd[i], &rfds); nfds++;
+            FD_SET(myself.childrenfd[i], &rfds);
         }
 
         /* ask N best pops if ROOT */
@@ -282,11 +283,7 @@ int main(int argc, char const *argv[])
     if(myself.recvfd != -1)tcp_disconnect(myself.recvfd);
 
     /* free any alocated memory */
-    free(myself.childrenfd);
-    for (i = 0; i < my_connect.tcpsessions; i++)free(myself.childrenaddr[i]);
-    free(myself.childrenaddr);
-    for (i = 0; i < my_connect.bestpops; i++)free(myself.ipaddrtport[i]);
-    free(myself.ipaddrtport);
+    free_memory(&myself, &my_connect);
 
     return 0;
 }
