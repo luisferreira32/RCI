@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <time.h>
 
 /* the user includes */
 #include "startup.h"
@@ -44,14 +45,11 @@ int main(int argc, char const *argv[])
             printf("[LOG] Failed to open tcp socket \n");
             quit = 1;
         }
-        /* allocate for POPs and set them default*/
-        if (myself.amiroot == true)
+        /* allocate for POPs*/
+        myself.ipaddrtport = (char **)malloc(sizeof(char *)*my_connect.bestpops);
+        for (i = 0; i < my_connect.bestpops; i++)
         {
-            myself.ipaddrtport = (char **)malloc(sizeof(char *)*my_connect.bestpops);
-            for (i = 0; i < my_connect.bestpops; i++)
-            {
-                myself.ipaddrtport[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
-            }
+            myself.ipaddrtport[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
         }
     }
 
@@ -61,7 +59,7 @@ int main(int argc, char const *argv[])
         /* connects IF not already connected */
         if(connected == 0)
         {
-            printf("[LOG] Connecting to a stream ...\n");
+            printf("[LOG] Connecting to a stream...\n");
             /* connect to stream since there is a stream ID */
             if(sprintf(request_buffer,"WHOISROOT %s %s:%d\n", my_connect.streamID, my_connect.ipaddr, my_connect.uport)<0)
             {
@@ -129,7 +127,7 @@ int main(int argc, char const *argv[])
             perror("[ERROR] Select failed ");
             break;
         }
-
+        /* when timed out, only root times out, refresh on root server*/
         if(selected == 0)
         {
             if(refresh_root(&my_connect, my_ci.debug) < 0)
@@ -139,6 +137,7 @@ int main(int argc, char const *argv[])
             }
             continue;
         }
+        /* else read all other possible file descriptors */
         else
         {
             /* if the file read is stdin */
@@ -174,6 +173,7 @@ int main(int argc, char const *argv[])
             {
                 /* if size recieved is 0 it's a closing statement, reconnect */
                 connected = stream_recv_downstream(&myself, &my_ci, &my_connect);
+                tcp_disconnect(myself.fatherfd);
             }
 
             /* check if it's a peer trying to join the tree */
@@ -256,12 +256,6 @@ int main(int argc, char const *argv[])
         {
             printf("[LOG] Error on running remove request\n");
         }
-        /* de allocate root specific memory */
-        for (i = 0; i < my_connect.bestpops; i++)
-        {
-            free(myself.ipaddrtport[i]);
-        }
-        free(myself.ipaddrtport);
     }
     else
     {
@@ -277,6 +271,8 @@ int main(int argc, char const *argv[])
 
     /* free any alocated memory */
     free(myself.childrenfd);
+    for (i = 0; i < my_connect.bestpops; i++)free(myself.ipaddrtport[i]);
+    free(myself.ipaddrtport);
 
     return 0;
 }
