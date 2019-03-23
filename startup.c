@@ -31,7 +31,7 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer
 
     myself->amiroot = true;
     myself->interrupted = false;
-    myself->treeprinter = false;
+    myself->treeprinter = 0;
     myself->ipaddrtport = NULL;
     myself->popcounter = 0;
     myself->accessfd = -1;

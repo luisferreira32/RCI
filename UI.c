@@ -58,36 +58,42 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     else if(strcmp(command_buffer, "display on\n") == 0)
     {
         my_ci->display = true;
+        printf("[LOG] Command processed \n");
     }
     else if(strcmp(command_buffer, "display off\n") == 0)
     {
         my_ci->display = false;
+        printf("[LOG] Command processed \n");
     }
     else if(strcmp(command_buffer, "format ascii\n") == 0)
     {
         strcpy(my_ci->format, "ascii");
+        printf("[LOG] Command processed \n");
     }
     else if(strcmp(command_buffer, "format hex\n") == 0)
     {
         strcpy(my_ci->format, "hex");
+        printf("[LOG] Command processed \n");
     }
     else if(strcmp(command_buffer, "debug on\n") == 0)
     {
         my_ci->debug = true;
+        printf("[LOG] Command processed \n");
     }
     else if(strcmp(command_buffer, "debug off\n") == 0)
     {
         my_ci->debug = false;
+        printf("[LOG] Command processed \n");
     }
     else if(strcmp(command_buffer, "tree\n") == 0)
     {
         /* make tree request, when recieving tree msg auto print it?*/
-        myself->treeprinter = true;
+        myself->treeprinter = myself->nofchildren;
         printf("%s\n", my_connect->streamID);
         printf("%s:%d %d (",my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions );
         for (i = 0; i < myself->nofchildren; i++)
         {
-            printf("%s", myself->childrenaddr[i]);
+            printf(" %s ", myself->childrenaddr[i]);
         }
         printf(")\n");
         stream_treequery(myself,my_ci->debug);
@@ -106,7 +112,6 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
         printf("Invalid command, write HELP if needed.\n");
         return 0;
     }
-    printf("[LOG] Command processed \n");
 
     return 0;
 }

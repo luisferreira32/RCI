@@ -15,17 +15,9 @@ int recieve_listeners(int accessport)
 }
 
 /* create a fd for a child */
-int accept_children(int recvfd, char * addr)
+int accept_children(int recvfd)
 {
-    struct sockaddr_in addrstruct;
-    int fd = -1, port = -1;
-    char * buffer;
-
-    fd = tcp_accept(recvfd, &addrstruct);
-    buffer = inet_ntoa(addrstruct.sin_addr);
-    port = ntohs(addrstruct.sin_port);
-    sprintf(addr, "%s:%d", buffer, port);
-    return fd;
+    return  tcp_accept(recvfd, NULL);
 }
 
 /* connect to stream and return its file descritor*/
@@ -137,7 +129,7 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
         if (myself->nofchildren < my_connect->tcpsessions)
         {
             memset(message, 0, SBUFFSIZE);
-            if (sprintf(message, "PR %s %s:%d %d\n", new->queryID, my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions-myself->nofchildren)<0)
+            if (sprintf(message, "PR %s %s:%d %d\n", new->queryID, my_connect->ipaddr, my_connect->tport, ((my_connect->tcpsessions)-(myself->nofchildren)))<0)
             {
                 perror("[ERROR] Failed to formulate welcome message ");
                 free_list_element(head,new);
@@ -234,30 +226,45 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 
 
 /* upstream message treatment */
-int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head)
+int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head)
 {
     /* variables */
     char  header[SSBUFFSIZE], queryID[4], smallbuffer[SBUFFSIZE];
     pop_list *iter;
 
-    /* if there is an extra flag it means we're recieving a tree reply*/
+    /* if there is an extra flag it means we're recieving the rest of a tree reply*/
     if (extra > 0)
     {
-        /* we reached the final \n*/
-        if (capsule[0] == '\n')
+        /* if i'm the tree printer i print accordingly */
+        if (myself->treeprinter > 0 )
         {
-            myself->treeprinter = false;
-            return 0;
+            /* this means no more children in tree reply*/
+            if (capsule[0] == '\n')
+            {
+                printf(")\n");
+                myself->treeprinter--;
+                return 0;
+            }
+            sscanf(capsule, "%[^\n]", smallbuffer);
+            smallbuffer[strlen(smallbuffer)]='\0';
+            printf(" %s ", smallbuffer);
+            fflush(stdout);
+            /* and it means i'll get another tree reply to print */
+            myself->treeprinter++;
         }
-        /* otherwise print if i'm printer or pass on if not */
-        if (myself->treeprinter == true )
-        {
-            printf(" %s ", capsule);
-        }
+        /*if i'm not tree printer i only have to redirect */
         else
         {
-            if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))return -1;
+            if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))
+            {
+                return -1;
+            }
+            if (capsule[0] == '\n')
+            {
+                return 0;
+            }
         }
+        return 1;
     }
 
     /* check according to header the procedure */
@@ -271,13 +278,9 @@ int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connec
     /* if it's a new pop i must save it for possible redirect*/
     if (strcmp(header, "NP")==0)
     {
-        if (myself->popcounter > my_connect->bestpops || sscanf(capsule, "%s %s\n", header, myself->ipaddrtport[myself->popcounter])!=2)
+        if (sscanf(capsule, "%s %s\n", header, myself->childrenaddr[origin])!=2)
         {
             printf("[LOG] Did not add NP\n" );
-        }
-        else
-        {
-            myself->popcounter++;
         }
     }
     else if (strcmp(header, "PR") == 0)
@@ -326,17 +329,16 @@ int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connec
     }
     else if (strcmp(header, "TR") == 0)
     {
-        /* read how many more lines we'll need to see */
-        printf("%s\n",capsule );
+        /* read how many more newlines we'll need to see */
         if (sscanf(capsule, "%s %s %d",header, smallbuffer, &extra) != 3)
         {
             printf("[LOG] Failed to get tr addr \n");
             return -1;
         }
         /* maybe send upstream if im not printing? */
-        if (myself->treeprinter == true)
+        if (myself->treeprinter > 0)
         {
-            printf("%s %d\n",smallbuffer, extra );
+            printf("%s %d (",smallbuffer, extra );
         }
         else
         {
@@ -478,7 +480,7 @@ int stream_treereply(peer_conneciton * myself,iamroot_connection * my_connect, b
 {
     int i = 0, error = 0;
     char smallbuffer[60];
-    char * treemsg = (char *)calloc(sizeof(char)*60*myself->nofchildren + 60*sizeof(char), 0);
+    char * treemsg = (char *)malloc(sizeof(char)*60*myself->nofchildren + 60*sizeof(char));
 
     if (sprintf(treemsg, "TR %s:%d %d\n", my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions)<0)
     {
@@ -494,6 +496,7 @@ int stream_treereply(peer_conneciton * myself,iamroot_connection * my_connect, b
         strcat(treemsg, smallbuffer);
     }
     strcat(treemsg, "\n");
+
     if (error == 0 && tcp_send(myself->fatherfd, treemsg, strlen(treemsg), debug))
     {
         printf("[LOG] Failed to send TR \n");error = -1;

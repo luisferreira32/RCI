@@ -38,7 +38,7 @@ typedef struct peer_connection_s
 {
     bool amiroot;
     bool interrupted;
-    bool treeprinter;
+    int treeprinter;
     char ** ipaddrtport;
     int popcounter;
     int accessfd;
