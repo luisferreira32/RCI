@@ -7,9 +7,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
+
+/* our lives */
 #include "structs.h"
 #include "GUI.h"
 #include "root_api.h"
+#include "stream_api.h"
 
 /* defines */
 

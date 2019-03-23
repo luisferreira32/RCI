@@ -29,8 +29,12 @@ void set_default(iamroot_connection *, client_interface *,peer_conneciton *);
 int set_connection(iamroot_connection *, client_interface *,peer_conneciton *, int, const char **);
 int is_ip(char *);
 void display_help(void);
+/* to set and free dinamic memory in general */
 int set_memory(peer_conneciton *, iamroot_connection *);
 void free_memory(peer_conneciton *, iamroot_connection *);
+/* list manipulation functions */
+void add_list_element(pop_list ** , pop_list * );
+void free_list_element(pop_list ** , pop_list * );
 
 
 #endif

@@ -31,6 +31,7 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer
 
     myself->amiroot = true;
     myself->interrupted = false;
+    myself->treeprinter = false;
     myself->ipaddrtport = NULL;
     myself->popcounter = 0;
     myself->accessfd = -1;
@@ -388,4 +389,44 @@ void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     free(myself->fatherbuff);
     for (i = 0; i < my_connect->bestpops; i++)free(myself->ipaddrtport[i]);
     free(myself->ipaddrtport);
+}
+
+void add_list_element(pop_list ** head, pop_list * new)
+{
+    pop_list * iter = *head;
+    /* if there was no list, create it */
+    if (iter == NULL)
+    {
+        *head = new;
+    }
+    /* else add at the end */
+    else
+    {
+        while (iter->next != NULL)
+        {
+            iter = iter->next;
+        }
+        iter->next = new;
+    }
+}
+void free_list_element(pop_list ** head, pop_list * this)
+{
+    pop_list * iter = *head;
+
+    /* if it's the head, re attribute it */
+    if (this == iter)
+    {
+        *head = iter->next; /* possible NULL */
+        free(iter);
+    }
+    /* else, walk on our list */
+    else
+    {
+        while (iter->next != this)
+        {
+            iter = iter->next;
+        }
+        iter->next = this->next;
+        free(this);
+    }
 }

@@ -43,12 +43,12 @@ int stream_recv(int sockfd, char * smallbuffer, bool debug)
 }
 
 /* read stream capsule downstream and return values accondringly */
-int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, client_interface * my_ci, int extra, pop_list * head)
+int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, client_interface * my_ci, int extra, pop_list ** head)
 {
     /* variables */
     char header[SSBUFFSIZE], size[5], message[SBUFFSIZE];
     int data_size = 0, i = 0;
-    pop_list * iter, * new;
+    pop_list  * new;
 
     /* if i'm root it can only be DATA, let's capsule it and resend*/
     if (myself->amiroot == true)
@@ -125,32 +125,27 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
         /* add an element to our pop list */
         new = (pop_list *)malloc(sizeof(pop_list));
         new->next = NULL;
-        if (head == NULL)
-        {
-            head = new;
-        }
-        else
-        {
-            iter = head;
-            while (iter->next != NULL)iter=iter->next;
-            iter->next = new;
-        }
+        add_list_element(head,new);
         /* and retrieve PQ id and best pops*/
         if (sscanf(capsule, "%s %s %d\n", header, new->queryID, &(new->bestpops)) != 3)
         {
             printf("[LOG] Failed to get PQ ID & bestpops\n");
+            free_list_element(head,new);
             return -1;
         }
         /* if i can still accept tcps connections send my POPs*/
         if (myself->nofchildren < my_connect->tcpsessions)
         {
+            memset(message, 0, SBUFFSIZE);
             if (sprintf(message, "PR %s %s:%d %d\n", new->queryID, my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions-myself->nofchildren)<0)
             {
                 perror("[ERROR] Failed to formulate welcome message ");
+                free_list_element(head,new);
                 return -1;
             }
             if (tcp_send(myself->fatherfd, message, strlen(message), my_ci->debug))
             {
+                free_list_element(head,new);
                 return -1;
             }
             new->bestpops--;
@@ -159,9 +154,10 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
         if (new->bestpops > 0)
         {
             memset(message, 0, SBUFFSIZE);
-            if (sprintf(message, "PQ %s %d\n", new->queryID,new->bestpops)<0)
+            if (sprintf(message, "PQ %s %d\n", new->queryID, new->bestpops)<0)
             {
-                perror("[ERROR] Failed to formulate welcome message ");
+                perror("[ERROR] Failed to formulate pop query message ");
+                free_list_element(head,new);
                 return -1;
             }
             for (i = 0; i < myself->nofchildren; i++)
@@ -171,6 +167,18 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
                     return -1;
                 }
             }
+        }
+        else
+        {
+            free_list_element(head,new);
+        }
+    }
+    else if (strcmp(header,"TQ")==0)
+    {
+        /* if we recieve from father a TQ is to propagate... */
+        if (stream_treequery(myself, my_ci->debug) || stream_treereply(myself, my_connect, my_ci->debug))
+        {
+            printf("[LOG] Failed to proccess tree query\n");
         }
     }
     else
@@ -226,16 +234,30 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 
 
 /* upstream message treatment */
-int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list * head)
+int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head)
 {
     /* variables */
-    char  header[SSBUFFSIZE], queryID[4];
-    pop_list *iter, *aux;
+    char  header[SSBUFFSIZE], queryID[4], smallbuffer[SBUFFSIZE];
+    pop_list *iter;
 
     /* if there is an extra flag it means we're recieving a tree reply*/
     if (extra > 0)
     {
-        /* code */
+        /* we reached the final \n*/
+        if (capsule[0] == '\n')
+        {
+            myself->treeprinter = false;
+            return 0;
+        }
+        /* otherwise print if i'm printer or pass on if not */
+        if (myself->treeprinter == true )
+        {
+            printf(" %s ", capsule);
+        }
+        else
+        {
+            if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))return -1;
+        }
     }
 
     /* check according to header the procedure */
@@ -280,7 +302,7 @@ int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connec
                 printf("[LOG] Failed to get popq ID\n");
                 return -1;
             }
-            iter = head;
+            iter = *head;
             while (iter != NULL)
             {
                 /*only reply if we have the queryID asking */
@@ -298,13 +320,29 @@ int stream_recv_upstream(char * capsule, peer_conneciton* myself, iamroot_connec
             /* take out request of list if no longer needed */
             if (iter->bestpops <= 0)
             {
-                aux = iter;
-                iter = head;
-                while (iter->next != NULL && iter->next != aux) iter = iter->next;
-                iter->next = aux->next; /* either was head and points null again or the next on the list */
-                free(aux);
+                free_list_element(head,iter);
             }
         }
+    }
+    else if (strcmp(header, "TR") == 0)
+    {
+        /* read how many more lines we'll need to see */
+        printf("%s\n",capsule );
+        if (sscanf(capsule, "%s %s %d",header, smallbuffer, &extra) != 3)
+        {
+            printf("[LOG] Failed to get tr addr \n");
+            return -1;
+        }
+        /* maybe send upstream if im not printing? */
+        if (myself->treeprinter == true)
+        {
+            printf("%s %d\n",smallbuffer, extra );
+        }
+        else
+        {
+            if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))return -1;
+        }
+        return extra+1;
     }
     else
     {
@@ -402,7 +440,7 @@ int stream_popquery(peer_conneciton * myself, iamroot_connection * my_connect, b
         memset(message, 0, SBUFFSIZE);
         if (sprintf(message, "PQ %04X %d\n", i ,my_connect->bestpops-myself->popcounter)<0)
         {
-            perror("[ERROR] Failed to formulate welcome message ");
+            perror("[ERROR] Failed to formulate pq message ");
             return -1;
         }
         if (tcp_send(myself->childrenfd[i], message, strlen(message), debug))
@@ -411,4 +449,56 @@ int stream_popquery(peer_conneciton * myself, iamroot_connection * my_connect, b
         }
     }
     return 0;
+}
+
+/* query all childs for tree struct */
+int stream_treequery(peer_conneciton * myself, bool debug)
+{
+    int i = 0;
+    char message[SBUFFSIZE];
+
+    for (i = 0; i < myself->nofchildren; i++)
+    {
+        memset(message, 0, SBUFFSIZE);
+        if (sprintf(message, "TQ %s\n", myself->childrenaddr[i])<0)
+        {
+            perror("[ERROR] Failed to formulate tq message ");
+            return -1;
+        }
+        if (tcp_send(myself->childrenfd[i], message, strlen(message), debug))
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/* to dispatch the reply to father */
+int stream_treereply(peer_conneciton * myself,iamroot_connection * my_connect, bool debug)
+{
+    int i = 0, error = 0;
+    char smallbuffer[60];
+    char * treemsg = (char *)calloc(sizeof(char)*60*myself->nofchildren + 60*sizeof(char), 0);
+
+    if (sprintf(treemsg, "TR %s:%d %d\n", my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions)<0)
+    {
+        perror("[ERROR] Failed to formulate tq message ");error = -1;
+    }
+    for (i = 0; i < myself->nofchildren; i++)
+    {
+        if (sprintf(smallbuffer, "%s\n", myself->childrenaddr[i])<0)
+        {
+            perror("[ERROR] Failed to formulate tq message ");error = -1;
+        }
+        if (error != 0)break;
+        strcat(treemsg, smallbuffer);
+    }
+    strcat(treemsg, "\n");
+    if (error == 0 && tcp_send(myself->fatherfd, treemsg, strlen(treemsg), debug))
+    {
+        printf("[LOG] Failed to send TR \n");error = -1;
+    }
+
+    free(treemsg);
+    return error;
 }

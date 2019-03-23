@@ -20,7 +20,7 @@ int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE], recv_buffer[SBUFFSIZE];
-    int nfds = 0, i = 0, j = 0, noftries = 0, extra = 0, buff_end = 0, buff_end2 = 0;
+    int nfds = 0, i = 0, j = 0, noftries = 0, extra = 0, connected_child = 0, buff_end = 0, buff_end2 = 0;
     struct timeval root_timer, *timerp = NULL;
     /* flags */
     int quit = 0, connected = 0, selected = 0, accessing = 0;
@@ -126,7 +126,10 @@ int main(int argc, char const *argv[])
                 {
                     perror("[ERROR] Setting owned POPs ");
                 }
-                myself.popcounter++;
+                else
+                {
+                    myself.popcounter++;
+                }
             }
         }
 
@@ -210,7 +213,7 @@ int main(int argc, char const *argv[])
                         else
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
-                            if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra, head))<0)
+                            if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra, &head))<0)
                             {
                                 printf("[LOG] Failed to treat father's message\n");
                                 extra = 0;
@@ -276,7 +279,7 @@ int main(int argc, char const *argv[])
                 {
                     /* if size recieved is 0 it's a closing statement, reconnect */
                     memset(recv_buffer, 0, SBUFFSIZE);
-                    if((j=stream_recv(myself.childrenfd[i], recv_buffer, my_ci.debug))==0)
+                    if((connected_child=stream_recv(myself.childrenfd[i], recv_buffer, my_ci.debug))==0)
                     {
                         tcp_disconnect(myself.childrenfd[i]);
                         for (j = i; j < myself.nofchildren-1; j++)
@@ -284,8 +287,9 @@ int main(int argc, char const *argv[])
                             myself.childrenfd[j] = myself.childrenfd[j+1];
                         }
                         myself.nofchildren--;
+                        break;
                     }
-                    else if(j < 0)
+                    else if(connected_child < 0)
                     {
                         quit = 1;
                     }
@@ -303,9 +307,9 @@ int main(int argc, char const *argv[])
                             else
                             {
                                 myself.childbuff[i][buff_end2] = recv_buffer[buff_end];
-                                if ((extra = stream_recv_upstream(myself.childbuff[i], &myself, &my_connect, my_ci.debug, extra, head))<0)
+                                if ((extra = stream_recv_upstream(myself.childbuff[i], &myself, &my_connect, my_ci.debug, extra, &head))<0)
                                 {
-                                    printf("[LOG] Failed to treat father's message\n");
+                                    printf("[LOG] Failed to treat child's message\n");
                                 }
                                 buff_end2= 0;
                                 memset(myself.childbuff[i], 0, SBUFFSIZE);

@@ -9,7 +9,6 @@
 #define BBUFFSIZE 1000
 #define STDIN 0
 #define POPBEGIN 10
-#define ISTREE -2
 
 /* struct definitions */
 typedef struct iamroot_connection_s
@@ -39,6 +38,7 @@ typedef struct peer_connection_s
 {
     bool amiroot;
     bool interrupted;
+    bool treeprinter;
     char ** ipaddrtport;
     int popcounter;
     int accessfd;
@@ -54,7 +54,7 @@ typedef struct peer_connection_s
 typedef struct pop_list_s
 {
     struct pop_list_s * next;
-    char queryID[4];
+    char queryID[5];
     int bestpops;
 }pop_list;
 

@@ -82,6 +82,16 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     else if(strcmp(command_buffer, "tree\n") == 0)
     {
         /* make tree request, when recieving tree msg auto print it?*/
+        myself->treeprinter = true;
+        printf("%s\n", my_connect->streamID);
+        printf("%s:%d %d (",my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions );
+        for (i = 0; i < myself->nofchildren; i++)
+        {
+            printf("%s", myself->childrenaddr[i]);
+        }
+        printf(")\n");
+        stream_treequery(myself,my_ci->debug);
+
     }
     else if(strcmp(command_buffer, "exit\n") == 0)
     {
