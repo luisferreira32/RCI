@@ -37,6 +37,7 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     }
     else if(strcmp(command_buffer, "status\n") == 0)
     {
+        printf("\nSTATUS\n\n");
         printf("streamID: %s\n", my_connect->streamID);
         printf("interrupted: %s\n",  myself->interrupted ? "yes":"no");
         printf("amiroot: %s\n", myself->amiroot ? "yes":"no" );
@@ -54,6 +55,7 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
         {
             printf("child %d: %s\n",i+1,myself->childrenaddr[i]);
         }
+        printf("\n");
     }
     else if(strcmp(command_buffer, "display on\n") == 0)
     {
@@ -89,6 +91,7 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     {
         /* make tree request, when recieving tree msg auto print it?*/
         myself->treeprinter = myself->nofchildren;
+        printf("\nTREE\n\n");
         printf("%s\n", my_connect->streamID);
         printf("%s:%d %d (",my_connect->ipaddr, my_connect->tport, my_connect->tcpsessions );
         for (i = 0; i < myself->nofchildren; i++)
@@ -106,6 +109,12 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     else if(strcmp(command_buffer, "help\n") == 0)
     {
         render_help();
+    }
+    else if(strcmp(command_buffer, "clear\n") == 0)
+    {
+        printf("\x1B[1;1H\x1B[2J");
+        fflush(stdout);
+        return 0;
     }
     else
     {

@@ -50,7 +50,12 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
     /* if we're recieving an extra it means what is on capsule is raw DATA */
     if (extra > 0)
     {
-        return stream_data(capsule, myself, my_ci);
+        extra -= strlen(capsule);
+        if (stream_data(capsule, myself, my_ci))
+        {
+            return -1;
+        }
+        return extra;
     }
 
     /* check according to header the procedure */
@@ -191,12 +196,21 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
     {
         perror("[ERROR] Failed to encapsule ");
     }
+    /* put a \n at the end of the capsule (if original data was SBUFFSIZE)*/
+    if (capsule[strlen(capsule)-1] != '\n')
+    {
+        strcat(capsule, "\n");
+    }
 
     /*display*/
     if (my_ci->display == true)
     {
         /* take off the \n that is per default on data*/
-        data[strlen(data)-1]='\0';
+        if (data[strlen(data)-1]=='\n')
+        {
+            data[strlen(data)-1]='\0';
+        }
+
         /*ascii*/
         if (strcmp(my_ci->format, "ascii")==0)
         {
@@ -298,7 +312,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
             }
         }
         /* or propagate according to the requests */
-        else
+        else if(myself->amiroot == false)
         {
             if (sscanf(capsule, "%s %s ",header, queryID) != 2)
             {
@@ -326,6 +340,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
                 free_list_element(head,iter);
             }
         }
+        /* being root WITHOUT bestpops, means discard */
     }
     else if (strcmp(header, "TR") == 0)
     {

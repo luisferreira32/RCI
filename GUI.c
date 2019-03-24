@@ -18,7 +18,8 @@ void render_header(void)
     printf("** debug on/off                                       **\n");
     printf("** tree                                               **\n");
     printf("** exit                                               **\n");
-    printf("** HELP (extra command)                               **\n");
+    printf("** help (extra)                                       **\n");
+    printf("** clear (extra)                                      **\n");
     printf("********************************************************\n");
 }
 

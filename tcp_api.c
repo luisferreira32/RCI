@@ -98,7 +98,7 @@ int tcp_send(int server_fd, void *buf, size_t count, bool debug)
     int bytes_sent = 0;
 
     /*send the message*/
-    if((bytes_sent = send(server_fd, (const void *)buf, count, 0)) <0 )
+    if((bytes_sent = write(server_fd, (const void *)buf, count)) <0 )
     {
         perror("[ERROR] Client failed to send message ");
         return -1;
@@ -123,7 +123,7 @@ int tcp_recv(int server_fd, void *buf, size_t count, bool debug)
 
     /*count the number of bytes copied*/
     memset(buf, 0, count);
-    if((size_recv = recv(server_fd, buf, count,0)) < 0)
+    if((size_recv = read(server_fd, buf, count)) < 0)
     {
         perror("[ERROR] Client failed to recv message ");
         return -1;

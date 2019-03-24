@@ -362,13 +362,14 @@ int set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
         myself->childbuff[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
         memset(myself->childbuff[i],0,SBUFFSIZE);
     }
+    myself->fatherbuff = (char *)malloc(sizeof(char )*SBUFFSIZE);
+    memset(myself->fatherbuff,0,SBUFFSIZE);
+    /* open access to tcp connections */
     if((myself->recvfd = recieve_listeners(my_connect->tport))<0)
     {
         printf("[LOG] Failed to open tcp socket \n");
         quit = 1;
     }
-    myself->fatherbuff = (char *)malloc(sizeof(char )*SBUFFSIZE);
-    memset(myself->fatherbuff,0,SBUFFSIZE);
     /* allocate for POPs*/
     myself->ipaddrtport = (char **)malloc(sizeof(char *)*my_connect->bestpops);
     for (i = 0; i < my_connect->bestpops; i++)

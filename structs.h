@@ -4,7 +4,7 @@
 
 /* constants */
 #define SSBUFFSIZE 10
-#define SBUFFSIZE 100
+#define SBUFFSIZE 128
 #define MBUFFSIZE 500
 #define BBUFFSIZE 1000
 #define STDIN 0

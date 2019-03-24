@@ -132,6 +132,11 @@ int main(int argc, char const *argv[])
                     myself.popcounter++;
                 }
             }
+            /* replenish pops if we still need some */
+            if (myself.popcounter < my_connect.bestpops && stream_popquery(&myself, &my_connect, my_ci.debug))
+            {
+                printf("[LOG] Failed to send pop queries \n");
+            }
         }
 
         /* OUR IMPORTANT SELECT TO CHECK INPUTS */
@@ -161,6 +166,7 @@ int main(int argc, char const *argv[])
                     break;
                 }
                 quit = read_command(request_buffer, &my_connect, &my_ci, &myself);
+                continue;
             }
 
             /* read access fd if root*/
@@ -176,13 +182,12 @@ int main(int argc, char const *argv[])
                 {
                     printf("[LOG] Unexpected lack of POPs \n");
                     myself.popcounter = 0;
+                    /* pray for a pop reply from children */
                 }
-                /* reply the access server request */
-                pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[myself.popcounter], my_ci.debug);
-                /* and replenish pops */
-                if (stream_popquery(&myself, &my_connect, my_ci.debug))
+                else
                 {
-                    printf("[LOG] Failed to send pop queries \n");
+                    /* reply the access server request */
+                    pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[myself.popcounter], my_ci.debug);
                 }
             }
 
@@ -206,7 +211,7 @@ int main(int argc, char const *argv[])
                     buff_end = 0; buff_end2 = strlen(myself.fatherbuff);
                     while ((int)strlen(recv_buffer) > buff_end )
                     {
-                        if ( recv_buffer[buff_end] != '\n' && buff_end2< SBUFFSIZE-1)
+                        if ( recv_buffer[buff_end] != '\n' && buff_end2< SBUFFSIZE)
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
                             buff_end2++;
@@ -251,22 +256,24 @@ int main(int argc, char const *argv[])
                         myself.nofchildren++;
                     }
                 }
-                /* else connect, redirect and disconnect */
+                /* else connect, redirect to first child and disconnect */
                 else
                 {
                     if ((i = accept_children(myself.recvfd)) < 0)
                     {
                         printf("[LOG] Error accepting children \n");
                     }
-                    myself.popcounter--;
-                    if (myself.popcounter < 0 )
+                    if (myself.nofchildren <= 0)
                     {
-                        printf("[LOG] Unexpected lack of POPs \n");
-                        myself.popcounter = 0;
+                        printf("[LOG] No living soul to redirect, goodbye.\n");
+
                     }
-                    if (stream_redirect(i, myself.ipaddrtport[myself.popcounter], my_ci.debug))
+                    else
                     {
-                        printf("[LOG] Failed to redirect temp child \n");
+                        if (stream_redirect(i, myself.childrenaddr[myself.nofchildren-1], my_ci.debug))
+                        {
+                            printf("[LOG] Failed to redirect temp child \n");
+                        }
                     }
                     tcp_disconnect(i);
                 }
@@ -300,7 +307,7 @@ int main(int argc, char const *argv[])
                         buff_end = 0; buff_end2 = strlen(myself.childbuff[i]);
                         while ((int)strlen(recv_buffer) > buff_end )
                         {
-                            if ( recv_buffer[buff_end] != '\n' && buff_end2 < SBUFFSIZE-1)
+                            if ( recv_buffer[buff_end] != '\n' && buff_end2 < SBUFFSIZE)
                             {
                                 myself.childbuff[i][buff_end2] = recv_buffer[buff_end];
                                 buff_end2++;
