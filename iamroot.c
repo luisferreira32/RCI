@@ -43,6 +43,12 @@ int main(int argc, char const *argv[])
     if (quit == 0)
     {
         quit = set_memory(&myself, &my_connect);
+        /* open access to tcp connections */
+        if((myself.recvfd = receive_listeners(my_connect.tport))<0)
+        {
+            printf("[LOG] Failed to open tcp socket \n");
+            quit = 1;
+        }
     }
 
     /* MAIN LOOP USING SELECT WITH TIMER TO REFRESH */
@@ -132,11 +138,6 @@ int main(int argc, char const *argv[])
                     myself.popcounter++;
                 }
             }
-            /* replenish pops if we still need some */
-            if (myself.popcounter < my_connect.bestpops && stream_popquery(&myself, &my_connect, my_ci.debug))
-            {
-                printf("[LOG] Failed to send pop queries \n");
-            }
         }
 
         /* OUR IMPORTANT SELECT TO CHECK INPUTS */
@@ -169,32 +170,10 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
-            /* read access fd if root*/
-            if(myself.amiroot == true && FD_ISSET(myself.accessfd, &rfds))
-            {
-                myself.popcounter--;
-                /* exception if we try to access the root WHEN it still has slots*/
-                if (myself.nofchildren < my_connect.tcpsessions)
-                {
-                    accessing=1;
-                }
-                if (myself.popcounter < 0)
-                {
-                    printf("[LOG] Unexpected lack of POPs \n");
-                    myself.popcounter = 0;
-                    /* pray for a pop reply from children */
-                }
-                else
-                {
-                    /* reply the access server request */
-                    pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[myself.popcounter], my_ci.debug);
-                }
-            }
-
             /* read the stream and propagate to children */
             if (FD_ISSET(myself.fatherfd,&rfds))
             {
-                /* if size recieved is 0 it's a closing statement, reconnect */
+                /* if size received is 0 it's a closing statement, reconnect */
                 memset(recv_buffer, 0, SBUFFSIZE);
                 if((connected = stream_recv(myself.fatherfd, recv_buffer, my_ci.debug))==0)
                 {
@@ -211,7 +190,7 @@ int main(int argc, char const *argv[])
                     buff_end = 0; buff_end2 = strlen(myself.fatherbuff);
                     while ((int)strlen(recv_buffer) > buff_end )
                     {
-                        if ( recv_buffer[buff_end] != '\n' && buff_end2< SBUFFSIZE)
+                        if ( recv_buffer[buff_end] != '\n' && buff_end2< MBUFFSIZE)
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
                             buff_end2++;
@@ -225,7 +204,7 @@ int main(int argc, char const *argv[])
                                 extra = 0;
                             }
                             buff_end2 = 0;
-                            memset(myself.fatherbuff, 0, SBUFFSIZE);
+                            memset(myself.fatherbuff, 0, MBUFFSIZE);
                         }
                         buff_end ++;
                     }
@@ -285,7 +264,7 @@ int main(int argc, char const *argv[])
             {
                 if (FD_ISSET(myself.childrenfd[i], &rfds))
                 {
-                    /* if size recieved is 0 it's a closing statement, reconnect */
+                    /* if size received is 0 it's a closing statement, reconnect */
                     memset(recv_buffer, 0, SBUFFSIZE);
                     if((connected_child=stream_recv(myself.childrenfd[i], recv_buffer, my_ci.debug))==0)
                     {
@@ -307,7 +286,7 @@ int main(int argc, char const *argv[])
                         buff_end = 0; buff_end2 = strlen(myself.childbuff[i]);
                         while ((int)strlen(recv_buffer) > buff_end )
                         {
-                            if ( recv_buffer[buff_end] != '\n' && buff_end2 < SBUFFSIZE)
+                            if ( recv_buffer[buff_end] != '\n' && buff_end2 < MBUFFSIZE)
                             {
                                 myself.childbuff[i][buff_end2] = recv_buffer[buff_end];
                                 buff_end2++;
@@ -321,12 +300,43 @@ int main(int argc, char const *argv[])
                                     extrachild[i] = 0;
                                 }
                                 buff_end2= 0;
-                                memset(myself.childbuff[i], 0, SBUFFSIZE);
+                                memset(myself.childbuff[i], 0, MBUFFSIZE);
                             }
                             buff_end ++;
                         }
                     }
                 }
+            }
+
+
+            /* read access fd if root*/
+            if(myself.amiroot == true && FD_ISSET(myself.accessfd, &rfds))
+            {
+                myself.popcounter--;
+                /* exception if we try to access the root WHEN it still has slots*/
+                if (myself.nofchildren < my_connect.tcpsessions)
+                {
+                    accessing=1;
+                }
+                if (myself.popcounter < 0)
+                {
+                    printf("[LOG] Unexpected lack of POPs \n");
+                    myself.popcounter = 0;
+                    /* pray for a pop reply from children */
+                }
+                else
+                {
+                    /* reply the access server request */
+                    pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[myself.popcounter], my_ci.debug);
+                }
+
+                /* replenish pops if we still need some */
+                if (myself.popcounter < my_connect.bestpops && stream_popquery(&myself, &my_connect, my_ci.debug))
+                {
+                    printf("[LOG] Failed to send pop queries \n");
+                }
+                /* and wait for pop replies will you? */
+                sleep(1);
             }
         }
     }

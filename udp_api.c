@@ -47,6 +47,7 @@ OUTPUT - bytes recieved
 int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bool debug)
 {
     int bytes_recv = 0, nfd = 0;
+    char * closer;
     socklen_t addrlen = sizeof(struct sockaddr_in);
     fd_set readfd;
     struct timeval timeout;
@@ -72,9 +73,11 @@ int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bo
         printf("[LOG] Unexpected socket address\n" );
     }
 
-    if(bytes_recv > count)
+    if(bytes_recv == count)
     {
-        printf("[LOG] overflowed buffer\n" );
+        printf("[LOG] Another one byte's a dust\n");
+        closer = buf;
+        closer[count-1] = '\0';
     }
 
     /* debug option */

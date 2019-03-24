@@ -11,6 +11,7 @@
 #define POPBEGIN 10
 
 /* struct definitions */
+/* a struct defining to whom we will connect and general aspects of our own conneciton */
 typedef struct iamroot_connection_s
 {
     char streamID[63];
@@ -27,6 +28,7 @@ typedef struct iamroot_connection_s
     int tsecs;
 }iamroot_connection;
 
+/* a struct defining how the client interface will change */
 typedef struct client_interface_s
 {
     bool debug;
@@ -34,6 +36,7 @@ typedef struct client_interface_s
     char format[4];
 }client_interface;
 
+/* a struct managing all connections fds, buffers and addresses as well as status of those connections */
 typedef struct peer_connection_s
 {
     bool amiroot;
@@ -51,6 +54,7 @@ typedef struct peer_connection_s
     int nofchildren;
 }peer_conneciton;
 
+/* struct o make a POP query list */
 typedef struct pop_list_s
 {
     struct pop_list_s * next;

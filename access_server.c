@@ -5,12 +5,12 @@
 
 /* functions */
 
-/* access server stuff */
+/* opens an UDP server and retrieves its file descriptor */
 int open_access_server(int port, peer_conneciton * myself)
 {
     if((myself->accessfd = udp_server(port)) < 0)
     {
-        printf("[ERROR] Failed to create file descriptor\n");
+        printf("[LOG] Failed to create access server\n");
     }
     return 0;
 }
@@ -49,14 +49,14 @@ int refresh_root(iamroot_connection * my_connect, bool debug)
     return 0;
 }
 
-/* make a response to the request */
+/* make a response to the request made on an access server  */
 int pop_reply(iamroot_connection * my_connect, int accessfd, char * ipaddrtport, bool debug)
 {
     /* variables */
     char answer[SBUFFSIZE],request[SSBUFFSIZE];
     struct sockaddr_in peer;
 
-    /* recieve check */
+    /* receive the pop request from a peer wanting to connect */
     memset(request, 0, SSBUFFSIZE);
     if(udp_recv(accessfd, request, SSBUFFSIZE, &peer, debug) < 0 )
     {
@@ -71,7 +71,7 @@ int pop_reply(iamroot_connection * my_connect, int accessfd, char * ipaddrtport,
         return -1;
     }
 
-    /* if it's a pop request answer with the pop*/
+    /* if it's a pop request answer with a known POP */
     if(sprintf(answer, "POPRESP %s %s\n", my_connect->streamID, ipaddrtport) <0)
     {
         perror("[ERROR] Failed to generate answer ");
@@ -86,7 +86,7 @@ int pop_reply(iamroot_connection * my_connect, int accessfd, char * ipaddrtport,
     return 0;
 }
 
-/* non root request */
+/* to use if we are not root and want to ask the access server which POP listen from */
 int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool debug)
 {
     /* variables */
@@ -107,7 +107,7 @@ int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool
         printf("[LOG] Failed to create socket to access server\n");
         return -1;
     }
-    /* send check */
+    /* send the request formulated  */
     if(udp_send(socketfd, request, strlen(request), &peer,debug) < 0)
     {
         printf("[LOG] Failed to send request to root\n");
@@ -115,7 +115,7 @@ int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool
         return -1;
     }
 
-    /* recieve check */
+    /* receive answer from the access server */
     if(udp_recv(socketfd, answer_buffer, MBUFFSIZE, &peer, debug) < 0 )
     {
         printf("[LOG] Failed to recv answer from access server\n");
@@ -131,10 +131,10 @@ int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool
         return -1;
     }
 
-    /* last verify to protocol */
+    /* last verify to protocol, if not following just crash and goodbye */
     if (strcmp(request, "POPRESP") != 0 || strcmp(streamID, my_connect->streamID) != 0)
     {
-        printf("[ERROR] Access server not following protocol\n" );
+        printf("[LOG] Access server not following protocol\n" );
         return -1;
     }
 

@@ -16,12 +16,16 @@
 #include "startup.h"
 
 /* functions definitions */
-int recieve_listeners(int );
+/* to manage tcp listen, conenct and accept */
+int receive_listeners(int );
 int accept_children(int );
 int connect_stream(char *, int);
+/* function to recv from a stream */
 int stream_recv(int, char *, bool);
+/* reading data broken at the \n from the stream recv */
 int stream_recv_downstream(char *,peer_conneciton*, iamroot_connection *, client_interface *, int, pop_list **);
 int stream_recv_upstream(int,char *, peer_conneciton* , iamroot_connection * , bool,int, pop_list **);
+/* protocol implementation functions */
 int stream_welcome(iamroot_connection * , peer_conneciton * , bool );
 int stream_redirect(int, char *, bool);
 int stream_status(peer_conneciton *, bool);

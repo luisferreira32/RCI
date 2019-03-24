@@ -9,7 +9,7 @@
     - read from fd and depending on origin & message propagate /display*/
 
 /* create listening socket */
-int recieve_listeners(int accessport)
+int receive_listeners(int accessport)
 {
     return tcp_server(accessport);
 }
@@ -38,9 +38,9 @@ int stream_recv(int sockfd, char * smallbuffer, bool debug)
 int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, client_interface * my_ci, int extra, pop_list ** head)
 {
     /* variables */
-    char header[SSBUFFSIZE], size[5], message[SBUFFSIZE];
+    char header[SSBUFFSIZE], size[5], message[SBUFFSIZE], queryID[5];
     int data_size = 0, i = 0;
-    pop_list  * new;
+    pop_list  * new, *iter;
 
     /* if i'm root it can only be DATA, let's capsule it and resend*/
     if (myself->amiroot == true)
@@ -119,10 +119,30 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
     }
     else if(strcmp(header, "PQ") == 0)
     {
-        /* add an element to our pop list */
-        new = (pop_list *)malloc(sizeof(pop_list));
-        new->next = NULL;
-        add_list_element(head,new);
+        /*read the query ID */
+        if (sscanf(capsule, "%s %s ", header, queryID) != 2)
+        {
+            printf("[LOG] PQ read failed \n");
+            return -1;
+        }
+        /* recieving a pop query check if it's duplicate*/
+        iter = *head;
+        while (iter != NULL && strcmp(iter->queryID, queryID) != 0)
+        {
+            iter = iter->next;
+        }
+        /* if it's a new pq, add it to the list, else use the previous */
+        if (iter == NULL)
+        {
+            /* add an element to our pop list */
+            new = (pop_list *)malloc(sizeof(pop_list));
+            new->next = NULL;
+            add_list_element(head,new);
+        }
+        else
+        {
+            new = iter;
+        }
         /* and retrieve PQ id and best pops*/
         if (sscanf(capsule, "%s %s %d\n", header, new->queryID, &(new->bestpops)) != 3)
         {
@@ -172,7 +192,7 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
     }
     else if (strcmp(header,"TQ")==0)
     {
-        /* if we recieve from father a TQ is to propagate... */
+        /* if we receive from father a TQ is to propagate... */
         if (stream_treequery(myself, my_ci->debug) || stream_treereply(myself, my_connect, my_ci->debug))
         {
             printf("[LOG] Failed to proccess tree query\n");
@@ -196,6 +216,7 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
     {
         perror("[ERROR] Failed to encapsule ");
     }
+
     /* put a \n at the end of the capsule (if original data was SBUFFSIZE)*/
     if (capsule[strlen(capsule)-1] != '\n')
     {
@@ -249,6 +270,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
     /* if there is an extra flag it means we're recieving the rest of a tree reply*/
     if (extra > 0)
     {
+        /* IF I'M THE ROOT I TAKE THE TR TO MAKE SURE MY POPS ARE FRESH */
         /* if i'm the tree printer i print accordingly */
         if (myself->treeprinter > 0 )
         {
@@ -266,8 +288,8 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
             /* and it means i'll get another tree reply to print */
             myself->treeprinter++;
         }
-        /*if i'm not tree printer i only have to redirect */
-        else
+        /*if i'm not tree printer (&& i'm not root) I only have to redirect */
+        else if(myself->amiroot == false)
         {
             if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))
             {
@@ -278,6 +300,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
                 return 0;
             }
         }
+        /* if we did not reach the \n, there is still stuff to receive from child */
         return 1;
     }
 
@@ -446,7 +469,7 @@ int stream_redirect(int tempchild, char * ipaddrtport, bool debug)
     return 0;
 }
 
-/* query all my children for POPs and recieve the first pops */
+/* query all my children for POPs and receive the first pops */
 int stream_popquery(peer_conneciton * myself, iamroot_connection * my_connect, bool debug)
 {
     int i = 0;

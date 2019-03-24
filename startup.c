@@ -359,17 +359,12 @@ int set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     for (i = 0; i < my_connect->tcpsessions; i++)
     {
         myself->childrenaddr[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
-        myself->childbuff[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
-        memset(myself->childbuff[i],0,SBUFFSIZE);
+        myself->childbuff[i] = (char *)malloc(sizeof(char )*MBUFFSIZE);
+        memset(myself->childbuff[i],0,MBUFFSIZE);
     }
-    myself->fatherbuff = (char *)malloc(sizeof(char )*SBUFFSIZE);
-    memset(myself->fatherbuff,0,SBUFFSIZE);
-    /* open access to tcp connections */
-    if((myself->recvfd = recieve_listeners(my_connect->tport))<0)
-    {
-        printf("[LOG] Failed to open tcp socket \n");
-        quit = 1;
-    }
+    myself->fatherbuff = (char *)malloc(sizeof(char )*MBUFFSIZE);
+    memset(myself->fatherbuff,0,MBUFFSIZE);
+
     /* allocate for POPs*/
     myself->ipaddrtport = (char **)malloc(sizeof(char *)*my_connect->bestpops);
     for (i = 0; i < my_connect->bestpops; i++)
@@ -392,6 +387,7 @@ void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     free(myself->ipaddrtport);
 }
 
+/* dealing with pop list addictions */
 void add_list_element(pop_list ** head, pop_list * new)
 {
     pop_list * iter = *head;
@@ -410,6 +406,8 @@ void add_list_element(pop_list ** head, pop_list * new)
         iter->next = new;
     }
 }
+
+/* dealing with freeing an element anywhere in the pop list */
 void free_list_element(pop_list ** head, pop_list * this)
 {
     pop_list * iter = *head;
