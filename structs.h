@@ -42,7 +42,7 @@ typedef struct peer_connection_s
     bool amiroot;
     bool interrupted;
     int treeprinter;
-    char ** ipaddrtport;
+    char ** popaddr;
     int popcounter;
     int accessfd;
     int fatherfd;

@@ -32,7 +32,7 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer
     myself->amiroot = true;
     myself->interrupted = false;
     myself->treeprinter = 0;
-    myself->ipaddrtport = NULL;
+    myself->popaddr = NULL;
     myself->popcounter = 0;
     myself->accessfd = -1;
     myself->recvfd = -1;
@@ -366,10 +366,10 @@ int set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     memset(myself->fatherbuff,0,MBUFFSIZE);
 
     /* allocate for POPs*/
-    myself->ipaddrtport = (char **)malloc(sizeof(char *)*my_connect->bestpops);
+    myself->popaddr = (char **)malloc(sizeof(char *)*my_connect->bestpops);
     for (i = 0; i < my_connect->bestpops; i++)
     {
-        myself->ipaddrtport[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
+        myself->popaddr[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
     }
     return quit;
 }
@@ -383,8 +383,8 @@ void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     for (i = 0; i < my_connect->tcpsessions; i++)free(myself->childbuff[i]);
     free(myself->childbuff);
     free(myself->fatherbuff);
-    for (i = 0; i < my_connect->bestpops; i++)free(myself->ipaddrtport[i]);
-    free(myself->ipaddrtport);
+    for (i = 0; i < my_connect->bestpops; i++)free(myself->popaddr[i]);
+    free(myself->popaddr);
 }
 
 /* dealing with pop list addictions */

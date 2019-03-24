@@ -261,7 +261,7 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 
 
 /* upstream message treatment */
-int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head)
+int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head, int* querying)
 {
     /* variables */
     char  header[SSBUFFSIZE], queryID[4], smallbuffer[SBUFFSIZE];
@@ -325,13 +325,14 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
         /* if i'm root just save the POP if we have slot*/
         if (myself->amiroot == true && my_connect->bestpops > myself->popcounter)
         {
-            if (sscanf(capsule, "%s %s %s ", header, queryID, myself->ipaddrtport[myself->popcounter]) != 3)
+            if (sscanf(capsule, "%s %s %s ", header, queryID, myself->popaddr[myself->popcounter]) != 3)
             {
                 printf("[LOG] Failed to get pop \n");
             }
             else
             {
                 myself->popcounter++;
+                *querying = 0;
             }
         }
         /* or propagate according to the requests */

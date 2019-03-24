@@ -24,7 +24,7 @@ int main(int argc, char const *argv[])
     int extra = 0, extrachild[SSBUFFSIZE] = {0};
     struct timeval root_timer, *timerp = NULL;
     /* flags */
-    int quit = 0, connected = 0, selected = 0, accessing = 0;
+    int quit = 0, connected = 0, selected = 0, querying = 1;
     /* main variables */
     pop_list *head = NULL, *iter = NULL;
     iamroot_connection my_connect;
@@ -127,15 +127,16 @@ int main(int argc, char const *argv[])
         if (myself.amiroot == true && myself.popcounter < my_connect.bestpops)
         {
             /* check if I have pop, otherwise request for pops only if needed */
-            if (my_connect.tcpsessions > myself.nofchildren+accessing)
+            if (my_connect.tcpsessions > myself.nofchildren)
             {
-                if(sprintf(myself.ipaddrtport[myself.popcounter], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
+                if(sprintf(myself.popaddr[myself.popcounter], "%s:%d", my_connect.ipaddr, my_connect.tport) <0)
                 {
                     perror("[ERROR] Setting owned POPs ");
                 }
                 else
                 {
                     myself.popcounter++;
+                    querying = 0; /* no need to wait if i can accept */
                 }
             }
         }
@@ -146,6 +147,7 @@ int main(int argc, char const *argv[])
             perror("[ERROR] Select failed ");
             break;
         }
+
         /* when timed out, only root times out, refresh on root server*/
         if(selected == 0)
         {
@@ -214,7 +216,6 @@ int main(int argc, char const *argv[])
             /* check if it's a peer trying to join the tree */
             if (FD_ISSET(myself.recvfd, &rfds))
             {
-                accessing=0;
                 /* accept it and send a message of welcome or redirect */
                 if (myself.nofchildren < my_connect.tcpsessions)
                 {
@@ -294,7 +295,7 @@ int main(int argc, char const *argv[])
                             else
                             {
                                 myself.childbuff[i][buff_end2] = recv_buffer[buff_end];
-                                if ((extrachild[i] = stream_recv_upstream(i, myself.childbuff[i], &myself, &my_connect, my_ci.debug, extrachild[i], &head))<0)
+                                if ((extrachild[i] = stream_recv_upstream(i, myself.childbuff[i], &myself, &my_connect, my_ci.debug, extrachild[i], &head, &querying))<0)
                                 {
                                     printf("[LOG] Failed to treat child's message\n");
                                     extrachild[i] = 0;
@@ -312,34 +313,35 @@ int main(int argc, char const *argv[])
             /* read access fd if root*/
             if(myself.amiroot == true && FD_ISSET(myself.accessfd, &rfds))
             {
-                myself.popcounter--;
-                /* exception if we try to access the root WHEN it still has slots*/
-                if (myself.nofchildren < my_connect.tcpsessions)
+                /* reply if we finished querying current tree */
+                if(querying == 0)
                 {
-                    accessing=1;
+                    myself.popcounter--;
+                    if (myself.popcounter < 0)
+                    {
+                        printf("[LOG] Unexpected lack of pops...\n");
+                        quit = 1;break;
+                    }
+                    pop_reply(&my_connect, myself.accessfd, myself.popaddr[myself.popcounter], my_ci.debug);
+                    querying = 1;
                 }
-                if (myself.popcounter < 0)
-                {
-                    printf("[LOG] Unexpected lack of POPs \n");
-                    myself.popcounter = 0;
-                    /* pray for a pop reply from children */
-                }
+                /* otherwise better get some NEW pops, the old ones may be corrupted */
                 else
                 {
-                    /* reply the access server request */
-                    pop_reply(&my_connect, myself.accessfd, myself.ipaddrtport[myself.popcounter], my_ci.debug);
+                    querying = 1;myself.popcounter = 0;
+                    if (stream_popquery(&myself, &my_connect, my_ci.debug))
+                    {
+                        printf("[LOG] Failed to send pop queries \n");
+                        quit = 1;break;
+                    }
+                    /* and wait for pop replies will you? */
+                    sleep(1);
                 }
-
-                /* replenish pops if we still need some */
-                if (myself.popcounter < my_connect.bestpops && stream_popquery(&myself, &my_connect, my_ci.debug))
-                {
-                    printf("[LOG] Failed to send pop queries \n");
-                }
-                /* and wait for pop replies will you? */
-                sleep(1);
             }
-        }
-    }
+
+        }/* select close */
+
+    }/* main loop close */
 
     /* disconnecting procedures */
     if(myself.amiroot == true)

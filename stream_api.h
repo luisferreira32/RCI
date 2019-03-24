@@ -24,7 +24,7 @@ int connect_stream(char *, int);
 int stream_recv(int, char *, bool);
 /* reading data broken at the \n from the stream recv */
 int stream_recv_downstream(char *,peer_conneciton*, iamroot_connection *, client_interface *, int, pop_list **);
-int stream_recv_upstream(int,char *, peer_conneciton* , iamroot_connection * , bool,int, pop_list **);
+int stream_recv_upstream(int,char *, peer_conneciton* , iamroot_connection * , bool,int, pop_list **, int*);
 /* protocol implementation functions */
 int stream_welcome(iamroot_connection * , peer_conneciton * , bool );
 int stream_redirect(int, char *, bool);
