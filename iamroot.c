@@ -203,7 +203,7 @@ int main(int argc, char const *argv[])
                             if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra, &head))<0)
                             {
                                 printf("[LOG] Failed to treat father's message\n");
-                                extra = 0;
+                                quit = 1;break;
                             }
                             buff_end2 = 0;
                             memset(myself.fatherbuff, 0, MBUFFSIZE);
@@ -273,6 +273,7 @@ int main(int argc, char const *argv[])
                         for (j = i; j < myself.nofchildren-1; j++)
                         {
                             myself.childrenfd[j] = myself.childrenfd[j+1];
+                            myself.childrenaddr[j] = myself.childrenaddr[j+1];
                         }
                         myself.nofchildren--;
                         break;

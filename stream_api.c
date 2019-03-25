@@ -60,7 +60,7 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
 
     /* check according to header the procedure */
     memset(header, 0, SSBUFFSIZE);
-    if (sscanf(capsule, "%s ", header)!=1)
+    if (sscanf(capsule, "%2s ", header)!=1)
     {
         perror("[ERROR] Failed to fetch header from stream message ");
     }
@@ -306,7 +306,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
 
     /* check according to header the procedure */
     memset(header, 0, SSBUFFSIZE);
-    if (sscanf(capsule, "%s ", header) ==0)
+    if (sscanf(capsule, "%2s ", header) ==0)
     {
         perror("[ERROR] Failed to fetch header from stream message ");
         return -1;
@@ -344,6 +344,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
                 return -1;
             }
             iter = *head;
+            /* check which request it corresponded */
             while (iter != NULL)
             {
                 /*only reply if we have the queryID asking */
@@ -358,8 +359,9 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
                 }
                 iter = iter->next;
             }
-            /* take out request of list if no longer needed */
-            if (iter->bestpops <= 0)
+            /* if there was no request discard message */
+            /* else take out request of list if no longer needed */
+            if (iter != NULL && iter->bestpops <= 0)
             {
                 free_list_element(head,iter);
             }

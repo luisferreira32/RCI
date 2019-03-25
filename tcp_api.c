@@ -96,6 +96,7 @@ OUTPUT - size of memory recieved by server
 int tcp_send(int server_fd, void *buf, size_t count, bool debug)
 {
     int bytes_sent = 0;
+    char header[3];
 
     /*send the message*/
     if((bytes_sent = write(server_fd, (const void *)buf, count)) <0 )
@@ -106,7 +107,8 @@ int tcp_send(int server_fd, void *buf, size_t count, bool debug)
 
     if (debug == true)
     {
-        printf("[DEBUG] TCP message of %d bytes sent\n", bytes_sent);
+        sscanf((char*)buf, "%2s ", header);
+        printf("[DEBUG] TCP message of %d bytes sent| %s\n", bytes_sent, header);
     }
 
     return 0;
@@ -120,7 +122,7 @@ OUTPUT - size of memory recieved
 int tcp_recv(int server_fd, void *buf, size_t count, bool debug)
 {
     int size_recv = 0;
-    char * closer;
+    char * closer, header[3];
 
     /*count the number of bytes copied*/
     memset(buf, 0, count);
@@ -141,7 +143,8 @@ int tcp_recv(int server_fd, void *buf, size_t count, bool debug)
     /* debug option */
     if(debug == true)
     {
-        printf("[DEBUG] TCP message with %d bytes recieved\n", size_recv);
+        sscanf((char *)buf, "%2s ", header);
+        printf("[DEBUG] TCP message with %d bytes recieved| %s\n", size_recv, header);
     }
 
     /* returns 0 if orderly closed */
