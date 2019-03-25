@@ -110,7 +110,7 @@ int main(int argc, char const *argv[])
             FD_SET(myself.accessfd, &rfds);
             if(myself.accessfd>=nfds)nfds=myself.accessfd+1;
         }
-        /* all other file descritors*/
+        /* set all other file descritors*/
         FD_SET(STDIN, &rfds);
         FD_SET(myself.fatherfd, &rfds);
         if(myself.fatherfd>=nfds)nfds=myself.fatherfd+1;
@@ -339,6 +339,7 @@ int main(int argc, char const *argv[])
                 if (myself.popcounter < 0)
                 {
                     printf("[LOG] Unexpected lack of pops...\n");
+                    myself.popcounter = 0;
                     sleep(1);
                 }
                 else
