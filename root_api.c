@@ -70,6 +70,7 @@ int process_answer(char * answer, iamroot_connection * my_connect, peer_connecit
     {
         /* open access server and connect to stream */
         myself->amiroot = true;
+        myself->interrupted = false;
         if(myself->accessfd == -1 && open_access_server(my_connect->uport, myself))
         {
             printf("[LOG] Failed to open access server \n");

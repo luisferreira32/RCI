@@ -63,8 +63,8 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, pe
     /* set default */
     set_default(my_connect, my_ci, myself);
 
-    /* if cast with no stream ID proceed as instructed */
-    if ( argc < 2 || (argv[i][0] == '-' && argv[i][1] != 'h'))
+    /* if cast with no arguments send dump */
+    if ( argc < 2)
     {
         if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci->debug))
         {
@@ -324,6 +324,21 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, pe
         }
     }
 
+    /* if no stream ID proceed as instructed */
+    if (argv[1][0] == '-' && argv[1][1] != 'h')
+    {
+        if(run_request("DUMP\n", answer_buffer, MBUFFSIZE, my_connect, my_ci->debug))
+        {
+            printf("[LOG] Error on running request\n");
+            return -1;
+        }
+        if(process_answer(answer_buffer, NULL, NULL, my_ci->debug))
+        {
+            printf("[LOG] Error processing answer\n");
+        }
+        return -1;
+    }
+
     return 0;
 }
 
@@ -377,14 +392,23 @@ int set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
 void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
 {
     int i = 0;
-    free(myself->childrenfd);
-    for (i = 0; i < my_connect->tcpsessions; i++)free(myself->childrenaddr[i]);
-    free(myself->childrenaddr);
-    for (i = 0; i < my_connect->tcpsessions; i++)free(myself->childbuff[i]);
-    free(myself->childbuff);
-    free(myself->fatherbuff);
-    for (i = 0; i < my_connect->bestpops; i++)free(myself->popaddr[i]);
-    free(myself->popaddr);
+    if(myself->childrenfd != NULL)free(myself->childrenfd);
+    for (i = 0; i < my_connect->tcpsessions; i++)
+    {
+        if(myself->childrenaddr[i] != NULL)free(myself->childrenaddr[i]);
+    }
+    if(myself->childrenaddr != NULL)free(myself->childrenaddr);
+    for (i = 0; i < my_connect->tcpsessions; i++)
+    {
+        if(myself->childbuff[i] != NULL)free(myself->childbuff[i]);
+    }
+    if(myself->childbuff != NULL)free(myself->childbuff);
+    if(myself->fatherbuff != NULL)free(myself->fatherbuff);
+    for (i = 0; i < my_connect->bestpops; i++)
+    {
+        if(myself->popaddr[i] != NULL )free(myself->popaddr[i]);
+    }
+    if(myself->popaddr != NULL)free(myself->popaddr);
 }
 
 /* dealing with pop list addictions */

@@ -111,11 +111,31 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
     /* check if stream is broken or not */
     else if(strcmp(header, "SF")==0)
     {
-        myself->interrupted = false;
+        if (myself->interrupted == true)
+        {
+            myself->interrupted = false;
+            for (i = 0; i < myself->nofchildren; i++)
+            {
+                if (tcp_send(myself->childrenfd[i], capsule, strlen(capsule), my_ci->debug))
+                {
+                    return -1;
+                }
+            }
+        }
     }
     else if(strcmp(header, "BS")==0)
     {
-        myself->interrupted = true;
+        if (myself->interrupted == false )
+        {
+            myself->interrupted = true;
+            for (i = 0; i < myself->nofchildren; i++)
+            {
+                if (tcp_send(myself->childrenfd[i], capsule, strlen(capsule), my_ci->debug))
+                {
+                    return -1;
+                }
+            }
+        }
     }
     else if(strcmp(header, "PQ") == 0)
     {
@@ -261,7 +281,7 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 
 
 /* upstream message treatment */
-int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head, int* querying)
+int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head)
 {
     /* variables */
     char  header[SSBUFFSIZE], queryID[4], smallbuffer[SBUFFSIZE];
@@ -332,7 +352,6 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
             else
             {
                 myself->popcounter++;
-                *querying = 0;
             }
         }
         /* or propagate according to the requests */
