@@ -39,7 +39,7 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
 {
     /* variables */
     char header[SSBUFFSIZE], size[5], message[SBUFFSIZE], queryID[5];
-    int data_size = 0, i = 0;
+    int data_size = 0, i = 0, bestpops = 0;
     pop_list  * new, *iter;
 
     /* if i'm root it can only be DATA, let's capsule it and resend*/
@@ -174,7 +174,8 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
         if (myself->nofchildren < my_connect->tcpsessions)
         {
             memset(message, 0, SBUFFSIZE);
-            if (sprintf(message, "PR %s %s:%d %d\n", new->queryID, my_connect->ipaddr, my_connect->tport, ((my_connect->tcpsessions)-(myself->nofchildren)))<0)
+            bestpops = (my_connect->tcpsessions)-(myself->nofchildren);
+            if (sprintf(message, "PR %s %s:%d %d\n", new->queryID, my_connect->ipaddr, my_connect->tport, bestpops)<0)
             {
                 perror("[ERROR] Failed to formulate welcome message ");
                 free_list_element(head,new);

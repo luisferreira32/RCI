@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE], recv_buffer[SBUFFSIZE];
     int nfds = 0, i = 0, j = 0, noftries = 0, connected_child = 0, buff_end = 0, buff_end2 = 0;
-    int extra = 0, extrachild[SSBUFFSIZE] = {0};
+    int extra = 0, extrachild[SBUFFSIZE] = {0};
     struct timeval timer;
     /* flags */
     int quit = 0, connected = 0, selected = 0;
@@ -86,7 +86,7 @@ int main(int argc, char const *argv[])
             }
             else if(quit == 1)
             {
-                /* if not root and it failed to connect exit */
+                /* if it failed to connect exit */
                 break;
             }
             else
@@ -103,19 +103,23 @@ int main(int argc, char const *argv[])
         timer.tv_usec = 0;
         timer.tv_sec = my_connect.tsecs;
         /* when tcp disconnect kernel KEEPS fd open for three minutes.. or program termination */
-        nfds = 10 + my_connect.tcpsessions;
+        nfds = 2;
         /* root specific*/
         if(myself.amiroot == true)
         {
-            FD_SET(myself.accessfd, &rfds);nfds++;
+            FD_SET(myself.accessfd, &rfds);
+            if(myself.accessfd>=nfds)nfds=myself.accessfd+1;
         }
         /* all other file descritors*/
-        FD_SET(STDIN, &rfds);nfds++;
-        FD_SET(myself.fatherfd, &rfds);nfds++;
-        FD_SET(myself.recvfd, &rfds);nfds++;
+        FD_SET(STDIN, &rfds);
+        FD_SET(myself.fatherfd, &rfds);
+        if(myself.fatherfd>=nfds)nfds=myself.fatherfd+1;
+        FD_SET(myself.recvfd, &rfds);
+        if(myself.recvfd>=nfds)nfds=myself.recvfd+1;
         for (i = 0; i < myself.nofchildren; i++)
         {
-            FD_SET(myself.childrenfd[i], &rfds);nfds++;
+            FD_SET(myself.childrenfd[i], &rfds);
+            if(myself.childrenfd[i]>=nfds)nfds=myself.childrenfd[i]+1;
         }
 
         /* check for pops if ROOT */
@@ -197,6 +201,7 @@ int main(int argc, char const *argv[])
                 }
                 else if(connected < 0)
                 {
+                    printf("[LOG] Error on father tcp connection \n");
                     quit = 1;
                 }
                 else
@@ -294,6 +299,8 @@ int main(int argc, char const *argv[])
                     else if(connected_child < 0)
                     {
                         quit = 1;
+                        printf("[LOG] Error on child tcp connection \n");
+                        break;
                     }
                     else
                     {

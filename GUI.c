@@ -30,5 +30,9 @@ void render_insert(void)
 
 void render_help(void)
 {
-    printf("YOU HAVE ASKED FOR HELP! GOOD LUCK\n");
+    printf("********************************************************\n");
+    printf("** Commands available are:                            **\n");
+    printf("**    streams, status, tree, exit, help, clear,       **\n");
+    printf("**    debug on/off, display on/off, format ascii/hex  **\n");
+    printf("********************************************************\n");
 }
