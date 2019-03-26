@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
     /* auxiliary variables delcaration*/
     char request_buffer[SBUFFSIZE], answer_buffer[MBUFFSIZE], recv_buffer[SBUFFSIZE];
     int nfds = 0, i = 0, j = 0, noftries = 0, connected_child = 0, buff_end = 0, buff_end2 = 0;
-    int extra = 0, extrachild[SBUFFSIZE] = {0};
+    int extra = 0, *extrachild = NULL;
     struct timeval timer;
     /* flags */
     int quit = 0, connected = 0, selected = 0;
@@ -42,13 +42,17 @@ int main(int argc, char const *argv[])
     /* initial procedures */
     if (quit == 0)
     {
-        quit = set_memory(&myself, &my_connect);
+        set_memory(&myself, &my_connect);
+        extrachild = (int *)malloc(sizeof(int)*my_connect.tcpsessions);
+        for (i = 0; i < my_connect.tcpsessions; i++)extrachild[i]=0;
         /* open access to tcp connections */
         if((myself.recvfd = receive_listeners(my_connect.tport))<0)
         {
             printf("[LOG] Failed to open tcp socket \n");
             quit = 1;
         }
+        timer.tv_usec = 0;
+        timer.tv_sec = my_connect.tsecs;
     }
 
     /* MAIN LOOP USING SELECT WITH TIMER TO REFRESH */
@@ -100,8 +104,6 @@ int main(int argc, char const *argv[])
 
         /* reset every loop */
         FD_ZERO(&rfds);
-        timer.tv_usec = 0;
-        timer.tv_sec = my_connect.tsecs;
         /* when tcp disconnect kernel KEEPS fd open for three minutes.. or program termination */
         nfds = 2;
         /* root specific*/
@@ -173,6 +175,9 @@ int main(int argc, char const *argv[])
                 tcp_disconnect(myself.fatherfd);
                 connected = 0;
             }
+
+            timer.tv_usec = 0;
+            timer.tv_sec = my_connect.tsecs;
             continue;
         }
         /* else read all other possible file descriptors */
@@ -380,7 +385,7 @@ int main(int argc, char const *argv[])
 
     /* free any alocated memory */
     free_memory(&myself, &my_connect);
-    iter = head;
+    if(extrachild != NULL)free(extrachild);
     while (head != NULL)
     {
         iter = head;

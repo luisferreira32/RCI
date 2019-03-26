@@ -53,6 +53,7 @@ int udp_recv(int socket_fd, void * buf, int count, struct sockaddr_in * peer, bo
     struct timeval timeout;
 
     /* use a select with timeout to exit */
+    FD_ZERO(&readfd);
     FD_SET(socket_fd, &readfd);nfd=socket_fd+1;
     timeout.tv_usec=0;timeout.tv_sec=15;
     if (select(nfd, &readfd, NULL, NULL, &timeout)==0)

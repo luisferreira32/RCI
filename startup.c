@@ -363,9 +363,9 @@ void display_help(void)
 }
 
 /* set the memory */
-int set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
+void set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
 {
-    int i = 0, quit = 0;
+    int i = 0;
 
     /* allocate memory accordingly and open service to recieve children*/
     myself->childrenfd = (int *)malloc(sizeof(int)*my_connect->tcpsessions);
@@ -386,7 +386,7 @@ int set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     {
         myself->popaddr[i] = (char *)malloc(sizeof(char )*SBUFFSIZE);
     }
-    return quit;
+
 }
 
 void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
@@ -404,10 +404,12 @@ void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     }
     if(myself->childbuff != NULL)free(myself->childbuff);
     if(myself->fatherbuff != NULL)free(myself->fatherbuff);
+
     for (i = 0; i < my_connect->bestpops; i++)
     {
         if(myself->popaddr[i] != NULL )free(myself->popaddr[i]);
     }
+    
     if(myself->popaddr != NULL)free(myself->popaddr);
 }
 

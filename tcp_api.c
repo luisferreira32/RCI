@@ -96,7 +96,7 @@ OUTPUT - size of memory recieved by server
 int tcp_send(int server_fd, void *buf, size_t count, bool debug)
 {
     int bytes_sent = 0;
-    char header[3];
+    char header[3] = {0};
 
     /*send the message*/
     if((bytes_sent = write(server_fd, (const void *)buf, count)) <0 )
@@ -122,7 +122,7 @@ OUTPUT - size of memory recieved
 int tcp_recv(int server_fd, void *buf, size_t count, bool debug)
 {
     int size_recv = 0;
-    char * closer, header[3];
+    char * closer, header[3] = {0};
 
     /*count the number of bytes copied*/
     memset(buf, 0, count);
