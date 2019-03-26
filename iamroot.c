@@ -296,7 +296,7 @@ int main(int argc, char const *argv[])
                         for (j = i; j < myself.nofchildren-1; j++)
                         {
                             myself.childrenfd[j] = myself.childrenfd[j+1];
-                            myself.childrenaddr[j] = myself.childrenaddr[j+1];
+                            strcpy(myself.childrenaddr[j],myself.childrenaddr[j+1]);
                         }
                         myself.nofchildren--;
                         break;
