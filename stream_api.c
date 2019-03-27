@@ -311,18 +311,21 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
                     myself->treeprinter++;
                 }
                 printf(")\n");
-                myself->treeprinter--; /* should be --, but while runs an extra?*/
+                /* finished printing one of the TRs*/
+                myself->treeprinter--;
             }
-            /* if i'm not root i should resend it now above */
-            else if(myself->amiroot == false)
+            /* if i'm not tree printer i should resend it now above */
+            else
             {
                 if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))
                 {
                     return -1;
                 }
             }
+            /* reached end of TR message return 0 as extra */
             return 0;
         }
+        /* still not in the end of the TR message */
         return 1;
     }
 
@@ -397,11 +400,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
             printf("[LOG] Failed to get tr addr \n");
             return -1;
         }
-        /* maybe send upstream if im not printing? */
-        if (myself->treeprinter == 0 && myself->amiroot == false)
-        {
-            if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))return -1;
-        }
+        /* start to recieve the extra, when we finish we send it upstream */
         return 1;
     }
     else

@@ -328,7 +328,7 @@ int main(int argc, char const *argv[])
                                     printf("[LOG] Failed to treat child's message\n");
                                     extrachild[i] = 0;
                                 }
-                                /* if it's a TR wait for the rest of the message to treat it*/
+                                /* if it's a TR wait for the rest of the message to treat it, else empty*/
                                 if (extrachild[i] == 0)
                                 {
                                     buff_end2= 0;
