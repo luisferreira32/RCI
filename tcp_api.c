@@ -97,6 +97,7 @@ int tcp_send(int server_fd, void *buf, size_t count, bool debug)
 {
     int bytes_sent = 0;
     char header[3] = {0};
+    signal(SIGPIPE, SIG_IGN);
 
     /*send the message*/
     if((bytes_sent = write(server_fd, (const void *)buf, count)) <0 )

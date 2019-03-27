@@ -285,43 +285,44 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head)
 {
     /* variables */
-    char  header[SSBUFFSIZE], queryID[4], smallbuffer[SBUFFSIZE];
+    char  header[SSBUFFSIZE], queryID[4], smallbuffer[SBUFFSIZE], mediumbuffer1[MBUFFSIZE], mediumbuffer2[MBUFFSIZE];
     pop_list *iter;
 
     /* if there is an extra flag it means we're recieving the rest of a tree reply*/
     if (extra > 0)
     {
-        /* IF I'M THE ROOT I TAKE THE TR TO MAKE SURE MY POPS ARE FRESH */
-        /* if i'm the tree printer i print accordingly */
-        if (myself->treeprinter > 0 )
+        /* two \n mean end of TQ */
+        if (capsule[strlen(capsule)-1] == '\n' && capsule[strlen(capsule)-2]== '\n')
         {
-            /* this means no more children in tree reply*/
-            if (capsule[0] == '\n')
+            /* it's finnally all on the capsule */
+            if (myself->treeprinter > 0)
             {
+                memset(mediumbuffer1, 0, MBUFFSIZE);memset(smallbuffer, 0, SBUFFSIZE);
+                sscanf(capsule, "%s %[^\n] %499c",header, smallbuffer, mediumbuffer1);
+                printf("%s (", smallbuffer);
+                while (mediumbuffer1[0] != '\0' && mediumbuffer1[0] != '\n' )
+                {
+                    /* READ EACH NEW LINE AND PRINT IT */
+                    strcpy(mediumbuffer2, mediumbuffer1);
+                    memset(mediumbuffer1, 0, MBUFFSIZE); memset(smallbuffer, 0, SBUFFSIZE);
+                    sscanf(mediumbuffer2, "%[^\n] %499c", smallbuffer, mediumbuffer1);
+                    printf(" %s ", smallbuffer);
+                    /* and say you'll have to print for N childs that gonna TR you */
+                    myself->treeprinter++;
+                }
                 printf(")\n");
-                myself->treeprinter--;
-                return 0;
+                myself->treeprinter--; /* should be --, but while runs an extra?*/
             }
-            sscanf(capsule, "%[^\n]", smallbuffer);
-            smallbuffer[strlen(smallbuffer)]='\0';
-            printf(" %s ", smallbuffer);
-            fflush(stdout);
-            /* and it means i'll get another tree reply to print */
-            myself->treeprinter++;
-        }
-        /*if i'm not tree printer (&& i'm not root) I only have to redirect */
-        else if(myself->amiroot == false)
-        {
-            if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))
+            /* if i'm not root i should resend it now above */
+            else if(myself->amiroot == false)
             {
-                return -1;
+                if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))
+                {
+                    return -1;
+                }
             }
-            if (capsule[0] == '\n')
-            {
-                return 0;
-            }
+            return 0;
         }
-        /* if we did not reach the \n, there is still stuff to receive from child */
         return 1;
     }
 
@@ -397,15 +398,11 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
             return -1;
         }
         /* maybe send upstream if im not printing? */
-        if (myself->treeprinter > 0)
-        {
-            printf("%s %d (",smallbuffer, extra );
-        }
-        else
+        if (myself->treeprinter == 0 && myself->amiroot == false)
         {
             if (tcp_send(myself->fatherfd, capsule, strlen(capsule), debug))return -1;
         }
-        return extra+1;
+        return 1;
     }
     else
     {
@@ -556,7 +553,7 @@ int stream_treereply(peer_conneciton * myself,iamroot_connection * my_connect, b
         if (error != 0)break;
         strcat(treemsg, smallbuffer);
     }
-    strcat(treemsg, "\n");
+    strcat(treemsg, "\n\0");
 
     if (error == 0 && tcp_send(myself->fatherfd, treemsg, strlen(treemsg), debug))
     {

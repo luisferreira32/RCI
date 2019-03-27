@@ -223,6 +223,7 @@ int main(int argc, char const *argv[])
                         else
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
+                            buff_end2++;
                             if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra, &head))<0)
                             {
                                 printf("[LOG] Failed to treat father's message\n");
@@ -321,13 +322,24 @@ int main(int argc, char const *argv[])
                             else
                             {
                                 myself.childbuff[i][buff_end2] = recv_buffer[buff_end];
+                                buff_end2++;
                                 if ((extrachild[i] = stream_recv_upstream(i, myself.childbuff[i], &myself, &my_connect, my_ci.debug, extrachild[i], &head))<0)
                                 {
                                     printf("[LOG] Failed to treat child's message\n");
                                     extrachild[i] = 0;
                                 }
-                                buff_end2= 0;
-                                memset(myself.childbuff[i], 0, MBUFFSIZE);
+                                /* if it's a TR wait for the rest of the message to treat it*/
+                                if (extrachild[i] == 0)
+                                {
+                                    buff_end2= 0;
+                                    memset(myself.childbuff[i], 0, MBUFFSIZE);
+                                }
+                                else if(buff_end2 > MBUFFSIZE-2)
+                                {
+                                    printf("[LOG] Middle buffer overflow\n");
+                                    buff_end2 = 0;
+                                    memset(myself.childbuff[i], 0, MBUFFSIZE);
+                                }
                             }
                             buff_end ++;
                         }
