@@ -5,7 +5,9 @@
 
 /* functions */
 
-/* sets the default value for connection */
+/**********************************************************/
+/* name: set_default
+** description: sets default values for state structures */
 void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer_conneciton * myself)
 {
     strcpy(my_connect->streamID, "\0");
@@ -45,15 +47,20 @@ void set_default(iamroot_connection * my_connect, client_interface * my_ci, peer
 
 }
 
-
-/* check if a text is an IP */
+/**********************************************************/
+/* name: is_ip
+** description:  returns if a given text is an IP or not*/
 int is_ip(char * text)
 {
     struct sockaddr_in test;
     return inet_pton(AF_INET, text, &(test.sin_addr));
 }
 
-/* sets the connection struct according to arguments */
+/**********************************************************/
+/* name: set_connection
+** description: given the arguments sets the structures
+with the said variables, also verifies all argument grammatic
+and acts accordingly, terminating program if needed */
 int set_connection(iamroot_connection * my_connect, client_interface * my_ci, peer_conneciton * myself, int argc, const char ** argv)
 {
     /* declaration */
@@ -342,7 +349,9 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, pe
     return 0;
 }
 
-/* display help options */
+/**********************************************************/
+/* name: display_help
+** description:  */
 void display_help(void)
 {
     printf("\niamroot [<streamID>] [-i <ipaddr>] [-t <tport>] [-u <uport>]\n");
@@ -362,7 +371,9 @@ void display_help(void)
     printf("-h to see this log again \n\n");
 }
 
-/* set the memory */
+/**********************************************************/
+/* name: set_memory
+** description:  */
 void set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
 {
     int i = 0;
@@ -389,6 +400,9 @@ void set_memory(peer_conneciton * myself, iamroot_connection * my_connect)
 
 }
 
+/**********************************************************/
+/* name: free_memory
+** description:  */
 void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
 {
     int i = 0;
@@ -409,7 +423,7 @@ void free_memory(peer_conneciton * myself, iamroot_connection * my_connect)
     {
         if(myself->popaddr[i] != NULL )free(myself->popaddr[i]);
     }
-    
+
     if(myself->popaddr != NULL)free(myself->popaddr);
 }
 

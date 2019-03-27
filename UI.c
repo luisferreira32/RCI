@@ -5,7 +5,10 @@
 
 /* functions */
 
-/* transforms a string in lowercase letters */
+/**********************************************************/
+/* name: string_lowercase
+** description: taking a pointer to a string transforms
+the said string to lower case chars  */
 void string_lowercase(char * string)
 {
     int i = 0;
@@ -15,7 +18,11 @@ void string_lowercase(char * string)
     }
 }
 
-/* interprets the user commands */
+/**********************************************************/
+/* name: read_command
+** description: taking a command from the UI acts accordingly,
+for example in "tree" only if it is root it can be casted, and
+if so begin the tree query protocol */
 int read_command(char * command_buffer, iamroot_connection * my_connect, client_interface * my_ci, peer_conneciton * myself)
 {
     /*variables*/

@@ -5,6 +5,9 @@
 
 /* functions */
 
+/**********************************************************/
+/* name: render_header
+** description:  */
 void render_header(void)
 {
     printf("********************************************************\n");
@@ -23,11 +26,16 @@ void render_header(void)
     printf("********************************************************\n");
 }
 
+/**********************************************************/
+/* name: render_insert
+** description:  */
 void render_insert(void)
 {
     printf("iamroot >> ");
 }
-
+/**********************************************************/
+/* name: render_help
+** description:  */
 void render_help(void)
 {
     printf("********************************************************\n");

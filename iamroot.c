@@ -16,6 +16,18 @@
 
 /* our main */
 
+/**********************************************************/
+/* name: main
+** description:
+The main operates in three phases:
+initialization - sets all variables with arguments and memory
+main loop - manages application functioning
+finalization - frees memory and closes openned tcp sessions
+
+In the main loop we can see three distinct parts:
+connecting - tries to connect to a stream source or exits
+initializing - treats variables that need values every loop
+select - treats all types of incoming connections */
 int main(int argc, char const *argv[])
 {
     /* auxiliary variables delcaration*/
@@ -251,7 +263,7 @@ int main(int argc, char const *argv[])
                     else
                     {
                         /* and send WElcome*/
-                        if (stream_welcome(&my_connect, &myself, my_ci.debug))
+                        if (stream_welcome(&my_connect, &myself, my_ci.debug, myself.nofchildren))
                         {
                             printf("[LOG] Failed to welcome child\n");
                             tcp_disconnect(myself.childrenfd[myself.nofchildren]);

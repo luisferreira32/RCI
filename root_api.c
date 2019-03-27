@@ -3,7 +3,11 @@
 
 /* GENERAL FUNCTIONS */
 
-/* creates udp, sends udp, recieves udp, closes udp */
+/**********************************************************/
+/* name: run_request
+** description: run a request to the root server and wait
+for answer, notice that within udp api we have a timer for
+receive so there is no problem if root server crashes */
 int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroot_connection * my_connect, bool debug)
 {
     /* variables */
@@ -34,7 +38,7 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
         udp_destroy(socketfd);
         return 0;
     }
-    /* recieve check */
+    /* receive check */
     if(udp_recv(socketfd, buff, BBUFFSIZE, &peer, debug) < 0 )
     {
         perror("[ERROR] Failed to recv answer from root");
@@ -53,7 +57,9 @@ int run_request(char * request, char * answer_buffer, size_t buffer_size, iamroo
     return 0;
 }
 
-/* takes the awnser buff and understands stuff */
+/**********************************************************/
+/* name: process_answer
+** description: taking the root server answer act accordingly */
 int process_answer(char * answer, iamroot_connection * my_connect, peer_conneciton * myself, bool debug)
 {
     /*variables*/

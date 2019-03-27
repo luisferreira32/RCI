@@ -3,30 +3,37 @@
 
 /* functions definitions */
 
-/* basic functions inside the package
-    - open port and connect to father
-    - open service and create relation with childrenfd
-    - read from fd and depending on origin & message propagate /display*/
-
-/* create listening socket */
+/**********************************************************/
+/* name: receive_listeners
+** description: calls tcp_server to return a file descritor
+this functions opens AF_INET socket bound do a said port */
 int receive_listeners(int accessport)
 {
     return tcp_server(accessport);
 }
 
-/* create a fd for a child */
+/**********************************************************/
+/* name: accept_children
+** description: calls tcp_accept to return a file descritor
+that is created after an accept of a connection in a said
+access point fd (fd that is listening) */
 int accept_children(int recvfd)
 {
     return  tcp_accept(recvfd, NULL);
 }
 
-/* connect to stream and return its file descritor*/
+/**********************************************************/
+/* name: connect_stream
+** description: as a client open a socket and connect to
+a said server in a IP and port, return its file descriptor */
 int connect_stream(char * streamip, int streamport)
 {
     return tcp_client(NULL, streamip, streamport);
 }
 
-/* flush to buffer */
+/**********************************************************/
+/* name: stream_recv
+** description: flushes information to a small buffer  */
 int stream_recv(int sockfd, char * smallbuffer, bool debug)
 {
     int size_recv = -1;
@@ -34,7 +41,10 @@ int stream_recv(int sockfd, char * smallbuffer, bool debug)
     return size_recv;
 }
 
-/* read stream capsule downstream and return values accondringly */
+/**********************************************************/
+/* name: stream_recv_downstream
+** description: takes a message until a \n given from current
+stream source and treats according to protocol */
 int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, client_interface * my_ci, int extra, pop_list ** head)
 {
     /* variables */
@@ -227,7 +237,10 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
     return 0;
 }
 
-/* IF it's a data we'll print it and resend it */
+/**********************************************************/
+/* name: stream_data
+** description: takes a data stream, display according to format,
+capsule it and stream it down */
 int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 {
     int i = 0;
@@ -281,7 +294,12 @@ int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 }
 
 
-/* upstream message treatment */
+/**********************************************************/
+/* name: stream_recv_upstream
+** description: treat a message recieved from a child according
+to protocol, if it's a tree reply there is a flag that changes
+and the intermidiate buffer is not purged so we can ensure the
+TR messages go in blocks upstream */
 int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, iamroot_connection * my_connect, bool debug, int extra, pop_list ** head)
 {
     /* variables */
@@ -400,7 +418,7 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
             printf("[LOG] Failed to get tr addr \n");
             return -1;
         }
-        /* start to recieve the extra, when we finish we send it upstream */
+        /* start to receive the extra, when we finish we send it upstream */
         return 1;
     }
     else
@@ -412,8 +430,11 @@ int stream_recv_upstream(int origin, char * capsule, peer_conneciton* myself, ia
 
 }
 
-/* welcoming message */
-int stream_welcome(iamroot_connection * my_connect, peer_conneciton * myself, bool debug)
+/**********************************************************/
+/* name: stream_welcome
+** description: sends a welcome message to newbord child
+and a status of the current stream */
+int stream_welcome(iamroot_connection * my_connect, peer_conneciton * myself, bool debug, int child)
 {
     char message[SBUFFSIZE];
 
@@ -423,7 +444,7 @@ int stream_welcome(iamroot_connection * my_connect, peer_conneciton * myself, bo
         perror("[ERROR] Failed to formulate welcome message ");
         return -1;
     }
-    if (tcp_send(myself->childrenfd[myself->nofchildren], message, strlen(message), debug))
+    if (tcp_send(myself->childrenfd[child], message, strlen(message), debug))
     {
         return -1;
     }
@@ -437,14 +458,17 @@ int stream_welcome(iamroot_connection * my_connect, peer_conneciton * myself, bo
     {
         sprintf(message, "BS\n");
     }
-    if (tcp_send(myself->childrenfd[myself->nofchildren], message, strlen(message), debug))
+    if (tcp_send(myself->childrenfd[child], message, strlen(message), debug))
     {
         return -1;
     }
 
     return 0;
 }
-/* say stream is broken */
+
+/**********************************************************/
+/* name: stream_status
+** description: is to send an update on the status of stream */
 int stream_status(peer_conneciton * myself, bool debug)
 {
     /*variablres*/
@@ -470,7 +494,10 @@ int stream_status(peer_conneciton * myself, bool debug)
     return 0;
 }
 
-/* redirect message */
+/**********************************************************/
+/* name: stream_redirect
+** description: redirects the temporary child that connected
+to the stream when the stream is not available */
 int stream_redirect(int tempchild, char * ipaddrtport, bool debug)
 {
     char message[SBUFFSIZE];
@@ -488,7 +515,10 @@ int stream_redirect(int tempchild, char * ipaddrtport, bool debug)
     return 0;
 }
 
-/* query all my children for POPs and receive the first pops */
+/**********************************************************/
+/* name: stream_popquery
+** description: as root create a pop query for all children
+to propagate downstream  */
 int stream_popquery(peer_conneciton * myself, iamroot_connection * my_connect, bool debug)
 {
     int i = 0;
@@ -510,7 +540,9 @@ int stream_popquery(peer_conneciton * myself, iamroot_connection * my_connect, b
     return 0;
 }
 
-/* query all childs for tree struct */
+/**********************************************************/
+/* name: stream_treequery
+** description: as a root creates the tree query to childs */
 int stream_treequery(peer_conneciton * myself, bool debug)
 {
     int i = 0;
@@ -532,7 +564,10 @@ int stream_treequery(peer_conneciton * myself, bool debug)
     return 0;
 }
 
-/* to dispatch the reply to father */
+/**********************************************************/
+/* name: stream_treereply
+** description: sets up and sends to father the TR messages
+structure taking in consideration the nof childs */
 int stream_treereply(peer_conneciton * myself,iamroot_connection * my_connect, bool debug)
 {
     int i = 0, error = 0;

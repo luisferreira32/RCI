@@ -5,7 +5,10 @@
 
 /* functions */
 
-/* opens an UDP server and retrieves its file descriptor */
+/**********************************************************/
+/* name: oepn_access_server
+** description: calls the udp API to open AF_INET socket
+with a specified port returns the file descriptor  */
 int open_access_server(int port, peer_conneciton * myself)
 {
     if((myself->accessfd = udp_server(port)) < 0)
@@ -15,7 +18,10 @@ int open_access_server(int port, peer_conneciton * myself)
     return 0;
 }
 
-/* register on root in tsecs function */
+/**********************************************************/
+/* name: refresh_root
+** description:  registers root on root server every tsecs
+as specified in the program calling with flag -t */
 int refresh_root(iamroot_connection * my_connect, bool debug)
 {
     /* variables */
@@ -49,7 +55,10 @@ int refresh_root(iamroot_connection * my_connect, bool debug)
     return 0;
 }
 
-/* make a response to the request made on an access server  */
+/**********************************************************/
+/* name: pop_reply
+** description: as access server (root) receive a request to
+enter the tree and reply with an ipaddr:tport message */
 int pop_reply(iamroot_connection * my_connect, int accessfd, char * ipaddrtport, bool debug)
 {
     /* variables */
@@ -86,7 +95,11 @@ int pop_reply(iamroot_connection * my_connect, int accessfd, char * ipaddrtport,
     return 0;
 }
 
-/* to use if we are not root and want to ask the access server which POP listen from */
+/**********************************************************/
+/* name:pop_request
+** description: as a peer wanting to access the tree send
+a pop request to the root and say our stream source will
+be the one root says */
 int pop_request(iamroot_connection * my_connect, char * asaddr, int asport, bool debug)
 {
     /* variables */
