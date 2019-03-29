@@ -132,7 +132,7 @@ int read_command(char * command_buffer, iamroot_connection * my_connect, client_
     }
     else
     {
-        printf("Invalid command, write HELP if needed.\n");
+        printf("[LOG] Invalid command, write HELP if needed.\n");
         return 0;
     }
 

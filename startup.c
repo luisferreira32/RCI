@@ -211,11 +211,12 @@ int set_connection(iamroot_connection * my_connect, client_interface * my_ci, pe
                 return -1;
             }
             /* read them */
-            if(sscanf(argv[i], "%[^:]:%d", my_connect->rsaddr, &my_connect->rsport) == 0)
+            if(sscanf(argv[i], "%[^:]:%d", my_connect->rsaddr, &my_connect->rsport) < 1)
             {
                 perror("[ERROR] Root server reading ");
                 return -1;
             }
+
             /* validate */
             if(!is_ip(my_connect->rsaddr) || my_connect->rsport < 1025)
             {

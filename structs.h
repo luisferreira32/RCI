@@ -33,7 +33,7 @@ typedef struct client_interface_s
 {
     bool debug;
     bool display;
-    char format[4];
+    char format[6];
 }client_interface;
 
 /* a struct managing all connections fds, buffers and addresses as well as status of those connections */

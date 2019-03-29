@@ -227,7 +227,7 @@ int main(int argc, char const *argv[])
                     buff_end = 0; buff_end2 = strlen(myself.fatherbuff);
                     while ((int)strlen(recv_buffer) > buff_end )
                     {
-                        if ( recv_buffer[buff_end] != '\n' && buff_end2< MBUFFSIZE)
+                        if ( recv_buffer[buff_end] != '\n' && buff_end2< MBUFFSIZE-1)
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
                             buff_end2++;
@@ -236,6 +236,9 @@ int main(int argc, char const *argv[])
                         {
                             myself.fatherbuff[buff_end2] = recv_buffer[buff_end];
                             buff_end2++;
+                            if ( recv_buffer[buff_end] != '\n')
+                                myself.fatherbuff[buff_end2] = '\n';
+                            /* treat message */
                             if ((extra = stream_recv_downstream(myself.fatherbuff, &myself, &my_connect, &my_ci, extra, &head))<0)
                             {
                                 printf("[LOG] Failed to treat father's message\n");

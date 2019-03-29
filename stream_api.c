@@ -67,7 +67,11 @@ int stream_recv_downstream(char * capsule, peer_conneciton* myself, iamroot_conn
         }
         return extra;
     }
-
+    /* lost \n in the space */
+    if (capsule[0] == '\n')
+    {
+        return 0;
+    }
     /* check according to header the procedure */
     memset(header, 0, SSBUFFSIZE);
     if (sscanf(capsule, "%2s ", header)!=1)
@@ -244,7 +248,7 @@ capsule it and stream it down */
 int stream_data(char * data, peer_conneciton * myself, client_interface * my_ci)
 {
     int i = 0;
-    char * capsule = (char *)malloc(sizeof(char)*strlen(data)+10);
+    char * capsule = (char *)malloc(sizeof(char)*(strlen(data)+10));
 
     if (sprintf(capsule, "DA %04X\n%s", (unsigned int)strlen(data), data)<0)
     {
